@@ -1,0 +1,241 @@
+{
+  "name": "Sentinela HL — 112.1 esqueleto",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "878c0d82-1d21-409a-80af-136862cd7917",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// escolha o caso: \"pass\" | \"escalate\" | \"reject\"\nconst which = \"pass\";\n\n// o repositório vem do ambiente do n8n (portátil). defina SENTINELA_REPO.\nconst repo = $env.SENTINELA_REPO;\n\n// o SHELL lê o fixture; o n8n não toca no arquivo nem conhece o JSON.\nconst command = `cd ${repo} && cat sentinela/filters/tests/fixtures/caso_${which}.json | uv run python -m sentinela.cli.run_filters -`;\n\nreturn [{ json: { which, command } }];\n"
+      },
+      "id": "5a0a1746-7d0d-4074-af1a-80883fb88937",
+      "name": "Montar comando",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        180,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "={{ $json.command }}"
+      },
+      "id": "258db2a6-72ef-44b4-8703-aa675fae1683",
+      "name": "Execute Command",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Execute Command devolve stdout como string; parseia para objeto\nconst stdout = $json.stdout || \"\";\nreturn [{ json: JSON.parse(stdout) }];\n"
+      },
+      "id": "5a51045d-3db5-42d0-b8e5-4df9ba543ec5",
+      "name": "Parse JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        620,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.report.decision }}",
+                    "rightValue": "pass",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "outputKey": "pass"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.report.decision }}",
+                    "rightValue": "escalate",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "outputKey": "escalate"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.report.decision }}",
+                    "rightValue": "reject",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "outputKey": "reject"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d5a1b059-bcbc-4e58-8bb5-eecc5345f64e",
+      "name": "Switch (report.decision)",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        840,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "12045ab8-e6bc-4d95-b0be-4cb20ce6df5e",
+      "name": "pass → log",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1060,
+        160
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "94e6be53-5035-4b11-b1f8-8f4c75ea7a22",
+      "name": "escalate → log",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1060,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "5851b5a6-c0e7-4e09-9621-320b772e8907",
+      "name": "reject → log",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1060,
+        440
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Montar comando",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar comando": {
+      "main": [
+        [
+          {
+            "node": "Execute Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON": {
+      "main": [
+        [
+          {
+            "node": "Switch (report.decision)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch (report.decision)": {
+      "main": [
+        [
+          {
+            "node": "pass → log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "escalate → log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "reject → log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
