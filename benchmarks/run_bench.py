@@ -25,7 +25,7 @@ from sentinela.clients.openrouter import OpenRouterClient
 from sentinela.core.contract import FilterAgentInput
 from sentinela.engines.agent import evaluate
 
-FIXTURES = Path(__file__).resolve().parent.parent / "sentinela" / "fixtures"
+FIXTURES = Path(__file__).resolve().parent.parent / "sentinela" / "filters" / "tests" / "fixtures"
 
 
 def run(client: LLMClient, prompt_version: str = "filter_v1") -> int:

@@ -1,28 +1,46 @@
 {
- "claim": {
-   "raw_item_id": "00000000-0000-4000-8000-000000000001",
-   "statement": "reanálise atmosférica indica possível aumento na persistência de bloqueios no atlântico norte durante o verão",
-   "epistemic_status": "hypothesis",
-   "confidence_score": 0.55,
-   "source_reliability": "high",
-   "category": "climate",
-   "scientific_area": "atmospheric science",
-   "keywords": ["bloqueio atmosférico", "atlântico norte", "reanálise"],
-   "pipeline_status": "in_filter"
- },
- "source": {
-   "excerpt": "os autores relatam uma tendência estatisticamente fraca (p aproximadamente 0.08) de maior persistência de bloqueios e classificam explicitamente o resultado como hipótese, a confirmar com séries temporais mais longas.",
-   "url": "https://example-journal.org/artigo-bloqueios",
-   "title": "persistência de bloqueios no atlântico norte: um sinal preliminar",
-   "reliability": "high"
- },
- "context": {
-   "case_id": "case_pass_001",
-   "scope": "science_research",
-   "notes": "rótulo honesto: fonte marca como hipótese, claim também. confiança calibrada com evidência fraca."
- },
- "_expected": {
-   "decision": "pass",
-   "requires_human_review": false
- }
+  "claim": {
+    "raw_item_id": "00000000-0000-4000-8000-000000000001",
+    "statement": "reanálise atmosférica indica possível aumento na persistência de bloqueios no atlântico norte durante o verão",
+    "epistemic_status": "hypothesis",
+    "confidence_score": 0.55,
+    "source_reliability": "high",
+    "category": "climate",
+    "scientific_area": "atmospheric science",
+    "keywords": [
+      "bloqueio atmosférico",
+      "atlântico norte",
+      "reanálise"
+    ],
+    "pipeline_status": "in_filter"
+  },
+  "source": {
+    "excerpt": "os autores relatam uma tendência estatisticamente fraca (p aproximadamente 0.08) de maior persistência de bloqueios e classificam explicitamente o resultado como hipótese, a confirmar com séries temporais mais longas.",
+    "url": "https://example-journal.org/artigo-bloqueios",
+    "title": "persistência de bloqueios no atlântico norte: um sinal preliminar",
+    "reliability": "high"
+  },
+  "context": {
+    "case_id": "case_pass_001",
+    "scope": "science_research",
+    "notes": "rótulo honesto: fonte marca como hipótese, claim também. confiança calibrada com evidência fraca."
+  },
+  "_expected": {
+    "decision": "pass",
+    "requires_human_review": false,
+    "classifications": [
+      {
+        "filter": "provenance",
+        "result": "pass"
+      },
+      {
+        "filter": "epistemic_label",
+        "result": "pass"
+      },
+      {
+        "filter": "calibration",
+        "result": "pass"
+      }
+    ]
+  }
 }

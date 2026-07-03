@@ -1,28 +1,45 @@
 {
- "claim": {
-   "raw_item_id": "00000000-0000-4000-8000-000000000002",
-   "statement": "o estudo sugere uma possível mudança nos padrões climáticos do atlântico norte",
-   "epistemic_status": "interpretation",
-   "confidence_score": 0.88,
-   "source_reliability": "high",
-   "category": "climate",
-   "scientific_area": "atmospheric science",
-   "keywords": ["atlântico norte", "clima"],
-   "pipeline_status": "in_filter"
- },
- "source": {
-   "excerpt": "o estudo encontrou sinais preliminares de possível mudança nos padrões climáticos do atlântico norte, mas os autores afirmam que os resultados ainda exigem validação independente.",
-   "url": "https://example.org/preprint",
-   "title": "Preliminary Climate Study",
-   "reliability": "high"
- },
- "context": {
-   "case_id": "case_escalate_001",
-   "scope": "science_research",
-   "notes": "A fonte sustenta a direção da claim, mas a confiança está alta demais."
- },
- "_expected": {
-   "decision": "escalate",
-   "requires_human_review": true
- }
+  "claim": {
+    "raw_item_id": "00000000-0000-4000-8000-000000000002",
+    "statement": "o estudo sugere uma possível mudança nos padrões climáticos do atlântico norte",
+    "epistemic_status": "interpretation",
+    "confidence_score": 0.88,
+    "source_reliability": "high",
+    "category": "climate",
+    "scientific_area": "atmospheric science",
+    "keywords": [
+      "atlântico norte",
+      "clima"
+    ],
+    "pipeline_status": "in_filter"
+  },
+  "source": {
+    "excerpt": "o estudo encontrou sinais preliminares de possível mudança nos padrões climáticos do atlântico norte, mas os autores afirmam que os resultados ainda exigem validação independente.",
+    "url": "https://example.org/preprint",
+    "title": "Preliminary Climate Study",
+    "reliability": "high"
+  },
+  "context": {
+    "case_id": "case_escalate_001",
+    "scope": "science_research",
+    "notes": "A fonte sustenta a direção da claim, mas a confiança está alta demais."
+  },
+  "_expected": {
+    "decision": "escalate",
+    "requires_human_review": true,
+    "classifications": [
+      {
+        "filter": "provenance",
+        "result": "pass"
+      },
+      {
+        "filter": "epistemic_label",
+        "result": "pass"
+      },
+      {
+        "filter": "calibration",
+        "result": "flag"
+      }
+    ]
+  }
 }
