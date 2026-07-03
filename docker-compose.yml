@@ -1,0 +1,109 @@
+# =====================================================================
+# Documento 110 — Docker Compose (ambiente de desenvolvimento)
+# Sentinela HL — orquestração local: n8n + Redis + Evolution API
+#
+# PREMISSAS FECHADAS:
+#   - Supabase é gerenciado SÓ pelo CLI (`supabase start`) — FORA deste compose.
+#   - n8n em modo single (sem worker).
+#   - Evolution API v1.x: Redis + volume, SEM Postgres próprio na V1.
+#   - macOS Apple Silicon (M-series) + Docker Desktop.
+#   - Containers alcançam o Supabase no host via host.docker.internal
+#     (NUNCA localhost — dentro do container, localhost é o próprio container).
+#   - Toda regra de negócio vive no Python. O n8n só orquestra:
+#         Cron → chama Python → recebe JSON → persiste/notifica.
+#     Nunca lógica de decisão dentro do n8n.
+# =====================================================================
+
+name: sentinela-hl
+
+services:
+  # -------------------------------------------------------------------
+  # Redis — cache/sessão da Evolution API. Não exposto (uso interno).
+  # -------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: sentinela-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks: [sentinela]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # -------------------------------------------------------------------
+  # n8n — orquestrador (modo single). Alcança o Supabase do host.
+  # -------------------------------------------------------------------
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: sentinela-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      - TZ=America/Sao_Paulo
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - N8N_DIAGNOSTICS_ENABLED=false
+      # Referências ao Supabase no host (CLI). Ajuste as portas ao que
+      # `supabase status` indicar. host.docker.internal resolve o host.
+      - SUPABASE_URL=http://host.docker.internal:54321
+      - SUPABASE_DB_HOST=host.docker.internal
+      - SUPABASE_DB_PORT=54322
+    volumes:
+      - n8n_data:/home/node/.n8n
+    extra_hosts:
+      # Nativo no Docker Desktop (Mac); a linha garante portabilidade p/ Linux.
+      - "host.docker.internal:host-gateway"
+    networks: [sentinela]
+
+  # -------------------------------------------------------------------
+  # Evolution API — gateway do WhatsApp.
+  # ATENÇÃO: tag v1.x. A v2.x EXIGE Postgres (Prisma) — se migrar p/ v2,
+  # adicionar um Postgres DEDICADO dela (nunca o banco do Sentinela).
+  # Confirme a tag disponível antes de subir.
+  # -------------------------------------------------------------------
+  evolution-api:
+    image: evoapicloud/evolution-api:v2.1.1
+    container_name: sentinela-evolution
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_URL=http://localhost:8080
+      - AUTHENTICATION_TYPE=apikey
+      - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY}
+      # V1: sem banco relacional — instâncias persistidas em arquivo (volume).
+      - DATABASE_ENABLED=false
+      # Redis para cache/sessão.
+      - REDIS_ENABLED=true
+      - REDIS_URI=redis://redis:6379
+      - REDIS_PREFIX_KEY=evolution
+      - CONFIG_SESSION_PHONE_CLIENT=SentinelaHL
+      - CONFIG_SESSION_PHONE_NAME=Chrome
+      - QRCODE_LIMIT=10
+      - LOG_LEVEL=ERROR
+    volumes:
+      - evolution_instances:/evolution/instances
+      - evolution_store:/evolution/store
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks: [sentinela]
+
+volumes:
+  n8n_data:
+  redis_data:
+  evolution_instances:
+  evolution_store:
+
+networks:
+  sentinela:
+    driver: bridge

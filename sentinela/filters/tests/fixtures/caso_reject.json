@@ -1,0 +1,30 @@
+{
+ "claim": {
+   "raw_item_id": "00000000-0000-4000-8000-000000000003",
+   "statement": "cientistas comprovaram que existe uma nova corrente oceânica permanente",
+   "epistemic_status": "confirmed_fact",
+   "confidence_score": 0.98,
+   "source_reliability": "low",
+   "category": "oceanography",
+   "scientific_area": "earth science",
+   "keywords": [
+     "corrente oceânica"
+   ],
+   "pipeline_status": "in_filter"
+ },
+ "source": {
+   "excerpt": "postagem em blog sem referências, autoria identificada ou metodologia.",
+   "url": "https://blog.example.com",
+   "title": "Blog pessoal",
+   "reliability": "low"
+ },
+ "context": {
+   "case_id": "case_reject_001",
+   "scope": "science_research",
+   "notes": "Fonte sem credibilidade."
+ },
+ "_expected": {
+   "decision": "reject",
+   "requires_human_review": false
+ }
+}
