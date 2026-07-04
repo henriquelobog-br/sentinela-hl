@@ -94,3 +94,67 @@ def statement_from(title: str | None, excerpt: str | None) -> str:
         return ""
     first = re.split(r"(?<=[.!?])\s+", text, maxsplit=1)[0]
     return first.strip()
+
+
+# ---------------------------------------------------------------------
+# 112.2C Rev 2 — sinais de evidência (observação vs estudo)
+# Agências oficiais ANUNCIAM observações (podem virar fato); journals
+# PUBLICAM estudos (permanecem hipótese). Domínio sozinho nunca basta.
+# ---------------------------------------------------------------------
+
+import re as _re
+
+OFFICIAL_AGENCY_DOMAINS = {
+    "nasa.gov", "noaa.gov", "usgs.gov", "esa.int", "copernicus.eu",
+    "weather.gov", "earthquake.usgs.gov", "cpc.ncep.noaa.gov",
+}
+
+# termos que sinalizam observação/anúncio (habilitam confirmed_fact)
+_OBSERVATION_TERMS = {
+    "reported", "recorded", "announced", "detected", "observed", "measured",
+    "confirmed", "launched", "magnitude", "earthquake", "eruption", "record",
+    "issued", "occurred", "released", "registrou", "detectou", "anunciou",
+    "observou", "terremoto", "erupção", "lançou",
+}
+# termos que sinalizam estudo/interpretação/preliminar (vetam confirmed_fact)
+_STUDY_TERMS = {
+    "study", "research", "paper", "hypothesis", "suggests", "suggest", "may",
+    "could", "preliminary", "projection", "projects", "estimate", "estimates",
+    "proposes", "propose", "model", "estudo", "pesquisa", "hipótese",
+    "preliminar", "sugere", "pode", "projeção",
+}
+
+
+def is_official_agency(url: str | None) -> bool:
+    dom = _domain(url)
+    if not dom:
+        return False
+    return any(dom == d or dom.endswith("." + d) for d in OFFICIAL_AGENCY_DOMAINS)
+
+
+def _has_term(text: str, terms: set[str]) -> str | None:
+    low = (text or "").lower()
+    for t in terms:
+        if _re.search(rf"\b{_re.escape(t)}\b", low):
+            return t
+    return None
+
+
+def derive_epistemics(url: str | None, text: str):
+    """Retorna (epistemic_status_value, confidence, reliability, notes).
+
+    confirmed_fact SÓ com porta tripla: agência oficial + sinal de observação
+    + ausência de sinal de estudo. Caso contrário, hypothesis (default seguro).
+    """
+    reliability = derive_reliability(url)
+    official = is_official_agency(url)
+    obs = _has_term(text, _OBSERVATION_TERMS)
+    study = _has_term(text, _STUDY_TERMS)
+
+    if official and obs and not study:
+        notes = f"source=official({_domain(url)}) evidence=observation({obs}) -> confirmed_fact"
+        return "confirmed_fact", 0.75, reliability, notes
+
+    reason = f"study({study})" if study else ("no-observation" if official else "not-official")
+    notes = f"reliability={reliability.value} evidence={reason} -> hypothesis"
+    return "hypothesis", confidence_for(reliability), reliability, notes

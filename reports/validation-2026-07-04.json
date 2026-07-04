@@ -1,0 +1,856 @@
+{
+  "generated_at": "2026-07-04T20:15:30.923596+00:00",
+  "model": "openai/gpt-5-mini",
+  "source": {
+    "name": "https://www.nasa.gov/rss/dyn/breaking_news.rss",
+    "url": "https://www.nasa.gov/rss/dyn/breaking_news.rss"
+  },
+  "summary": {
+    "total": 10,
+    "pass": 0,
+    "escalate": 4,
+    "reject": 4,
+    "error": 2,
+    "total_ms": 184977
+  },
+  "items": [
+    {
+      "input": {
+        "claim": {
+          "id": null,
+          "raw_item_id": "6a926a2a-a6e0-4601-8732-0d6c75665ade",
+          "statement": "NASA’s Hubble Spies Stellar Sparkler for July 4th",
+          "epistemic_status": "hypothesis",
+          "confidence_score": 0.6,
+          "source_reliability": "high",
+          "category": "general",
+          "country": null,
+          "scientific_area": null,
+          "entities": [],
+          "keywords": [
+            "nasa",
+            "hubble",
+            "spies",
+            "stellar",
+            "sparkler",
+            "july",
+            "white",
+            "blue",
+            "stars",
+            "glitter"
+          ],
+          "pipeline_status": "in_filter",
+          "requires_human_review": false,
+          "review_reason": null
+        },
+        "source": {
+          "excerpt": "Red, white, and blue stars glitter like a sparkler being waved on a dark night in this new image from NASA’s Hubble Space Telescope.",
+          "url": "https://science.nasa.gov/missions/hubble/nasas-hubble-spies-stellar-sparkler-for-july-4th/",
+          "title": "NASA’s Hubble Spies Stellar Sparkler for July 4th",
+          "reliability": "high",
+          "published_at": "2026-07-04T11:15:37Z"
+        },
+        "context": {
+          "case_id": "https://science.nasa.gov/missions/hubble/nasas-hubble-spies-stellar-sparkler-for-july-4th/",
+          "scope": "science_research",
+          "notes": "signals: reliability=high confidence=0.6 category=general keywords=10"
+        }
+      },
+      "output": {
+        "ok": true,
+        "report": {
+          "claim_id": null,
+          "classifications": [
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "provenance",
+              "result": "flag",
+              "rationale": "O trecho confirma que o Hubble produziu uma imagem cuja aparência lembra um 'sparkler', mas não sustenta explicitamente a parte 'for July 4th' nem indica data/ocasião, portanto só sustenta parcialmente a afirmação.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "epistemic_label",
+              "result": "fail",
+              "rationale": "Rotular como 'hypothesis' é inadequado: a declaração é uma descrição factual baseada numa imagem divulgada por NASA, não uma hipótese científica.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "calibration",
+              "result": "flag",
+              "rationale": "Score 0.6 é relativamente alto dado que a fonte apoia a descrição visual porém não apoia o vínculo temporal ('July 4th'), indicando confiança possivelmente inflada.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            }
+          ],
+          "decision": "reject",
+          "requires_human_review": false,
+          "notes": null
+        },
+        "error": null,
+        "run_id": "83983257-7ecb-4dfb-9cb6-7395d763a155"
+      },
+      "elapsed_ms": 11343,
+      "usage": null
+    },
+    {
+      "input": {
+        "claim": {
+          "id": null,
+          "raw_item_id": "62f19b15-6318-40ca-be36-979f1af61c27",
+          "statement": "NASA’s Hubble Captures Crimson Cloud Sparkling with White, Blue Stars",
+          "epistemic_status": "hypothesis",
+          "confidence_score": 0.6,
+          "source_reliability": "high",
+          "category": "general",
+          "country": null,
+          "scientific_area": null,
+          "entities": [],
+          "keywords": [
+            "nasa",
+            "hubble",
+            "captures",
+            "crimson",
+            "cloud",
+            "sparkling",
+            "white",
+            "blue",
+            "stars",
+            "shine"
+          ],
+          "pipeline_status": "in_filter",
+          "requires_human_review": false,
+          "review_reason": null
+        },
+        "source": {
+          "excerpt": "Blue and white stars shine brightly against crimson gas in this image from NASA’s Hubble Space Telescope.",
+          "url": "https://science.nasa.gov/missions/hubble/nasas-hubble-captures-crimson-cloud-sparkling-with-white-blue-stars/",
+          "title": "NASA’s Hubble Captures Crimson Cloud Sparkling with White, Blue Stars",
+          "reliability": "high",
+          "published_at": "2026-07-03T15:01:17Z"
+        },
+        "context": {
+          "case_id": "https://science.nasa.gov/missions/hubble/nasas-hubble-captures-crimson-cloud-sparkling-with-white-blue-stars/",
+          "scope": "science_research",
+          "notes": "signals: reliability=high confidence=0.6 category=general keywords=10"
+        }
+      },
+      "output": {
+        "ok": true,
+        "report": {
+          "claim_id": null,
+          "classifications": [
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "provenance",
+              "result": "pass",
+              "rationale": "O trecho da fonte diz explicitamente que estrelas azuis e brancas brilham contra gás carmesim em imagem do Hubble, sustentando diretamente a afirmação.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "epistemic_label",
+              "result": "fail",
+              "rationale": "Rotular como 'hypothesis' é incompatível: trata-se de descrição de observação direta (imagem do Hubble), não de uma hipótese.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "calibration",
+              "result": "flag",
+              "rationale": "Confidence_score 0.6 é subestimada diante de uma fonte direta e de alta confiabilidade; deveria ser mais alta para essa evidência observacional.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            }
+          ],
+          "decision": "reject",
+          "requires_human_review": false,
+          "notes": null
+        },
+        "error": null,
+        "run_id": "417821a8-03e3-49ff-8bfb-df4d3031cfa4"
+      },
+      "elapsed_ms": 9534,
+      "usage": null
+    },
+    {
+      "input": {
+        "claim": {
+          "id": null,
+          "raw_item_id": "124ed9e5-cd82-47d9-aa5e-b0dd917d2ba8",
+          "statement": "NASA’s Hubble Spots Star-Spangled Cosmic Scene",
+          "epistemic_status": "hypothesis",
+          "confidence_score": 0.6,
+          "source_reliability": "high",
+          "category": "general",
+          "country": null,
+          "scientific_area": null,
+          "entities": [],
+          "keywords": [
+            "nasa",
+            "hubble",
+            "spots",
+            "star",
+            "spangled",
+            "cosmic",
+            "scene",
+            "more",
+            "than",
+            "stars"
+          ],
+          "pipeline_status": "in_filter",
+          "requires_human_review": false,
+          "review_reason": null
+        },
+        "source": {
+          "excerpt": "More than 500,000 stars blaze red, white, and blue in this NASA Hubble image of the globular cluster Messier 3 (M3).",
+          "url": "https://science.nasa.gov/missions/hubble/nasas-hubble-spots-star-spangled-cosmic-scene/",
+          "title": "NASA’s Hubble Spots Star-Spangled Cosmic Scene",
+          "reliability": "high",
+          "published_at": "2026-07-03T12:42:03Z"
+        },
+        "context": {
+          "case_id": "https://science.nasa.gov/missions/hubble/nasas-hubble-spots-star-spangled-cosmic-scene/",
+          "scope": "science_research",
+          "notes": "signals: reliability=high confidence=0.6 category=general keywords=10"
+        }
+      },
+      "output": {
+        "ok": true,
+        "report": {
+          "claim_id": null,
+          "classifications": [
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "provenance",
+              "result": "pass",
+              "rationale": "O trecho da fonte diz explicitamente que a imagem do Hubble mostra mais de 500.000 estrelas em Messier 3, o que sustenta diretamente a formulação de que o Hubble ‘spotted’ uma cena estelar.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "epistemic_label",
+              "result": "fail",
+              "rationale": "Classificar como 'hypothesis' é incorreto: a fonte apresenta uma observação direta (descrição de imagem), portanto deveria ser tratado como fato confirmado/relatado, não hipótese.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "calibration",
+              "result": "fail",
+              "rationale": "A confiança 0.6 é insuficiente para uma observação direta reportada por uma fonte de alta confiabilidade; esperaria uma confiança substancialmente maior para este tipo de evidência.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            }
+          ],
+          "decision": "reject",
+          "requires_human_review": false,
+          "notes": null
+        },
+        "error": null,
+        "run_id": "20caa74f-c5cd-441d-a80b-dc591197be9f"
+      },
+      "elapsed_ms": 9295,
+      "usage": null
+    },
+    {
+      "input": {
+        "claim": {
+          "id": null,
+          "raw_item_id": "596dea10-8cda-419d-bd9a-29afb5c938ba",
+          "statement": "NASA’s Artemis II Breaks Agency Streaming Record",
+          "epistemic_status": "hypothesis",
+          "confidence_score": 0.6,
+          "source_reliability": "high",
+          "category": "general",
+          "country": null,
+          "scientific_area": null,
+          "entities": [],
+          "keywords": [
+            "nasa",
+            "artemis",
+            "breaks",
+            "agency",
+            "streaming",
+            "record",
+            "live",
+            "coverage",
+            "mission",
+            "drew"
+          ],
+          "pipeline_status": "in_filter",
+          "requires_human_review": false,
+          "review_reason": null
+        },
+        "source": {
+          "excerpt": "NASA’s live coverage of the Artemis II mission mission&#160;drew unprecedented&#160;public&#160;interest&#160;– including&#160;more than&#160;149.4&#160;million views&#160;of&#160;the launch, lunar flyby, splashdown&#160;on&#160;NASA-owned&#160;platforms, including the 24/7 streams covering the mission and the Orion spacecraft&#160;views&#160;–&#160;demonstrating&#160;strong, sustained global engagement throughout the mission.&#160; Around the Clock Live Broadcast NASA’s Artemis II Crew Launches to the Moon broadcast set unprecedented viewership records across the agency’s [&#8230;]",
+          "url": "https://www.nasa.gov/general/nasas-artemis-ii-breaks-agency-streaming-record/",
+          "title": "NASA’s Artemis II Breaks Agency Streaming Record",
+          "reliability": "high",
+          "published_at": "2026-07-02T18:02:21Z"
+        },
+        "context": {
+          "case_id": "https://www.nasa.gov/?p=984447",
+          "scope": "science_research",
+          "notes": "signals: reliability=high confidence=0.6 category=general keywords=10"
+        }
+      },
+      "output": {
+        "ok": true,
+        "report": {
+          "claim_id": null,
+          "classifications": [
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "provenance",
+              "result": "pass",
+              "rationale": "O trecho da fonte afirma explicitamente que a transmissão ‘set unprecedented viewership records’ e fornece um dado quantificado (>149.4 milhões de visualizações), sustentando diretamente a afirmação.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "epistemic_label",
+              "result": "flag",
+              "rationale": "A fonte é uma declaração autoritativa e quantificada da NASA consistente com um fato confirmado; rotular como 'hypothesis' subestima a força da evidência.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "calibration",
+              "result": "flag",
+              "rationale": "A confiança 0.6 é baixa perante uma fonte de alta confiabilidade que apresenta dados numéricos e afirmação direta; um score mais alto seria coerente com a qualidade/quantidade de evidência.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            }
+          ],
+          "decision": "escalate",
+          "requires_human_review": true,
+          "notes": null
+        },
+        "error": null,
+        "run_id": "b5fb43a8-97b7-4f58-bc3d-b52e360b0674"
+      },
+      "elapsed_ms": 33040,
+      "usage": null
+    },
+    {
+      "input": {
+        "claim": {
+          "id": null,
+          "raw_item_id": "19babdcf-5550-45af-8ff0-86faf9b6b0be",
+          "statement": "Good Morning, Earth!",
+          "epistemic_status": "hypothesis",
+          "confidence_score": 0.6,
+          "source_reliability": "high",
+          "category": "general",
+          "country": null,
+          "scientific_area": null,
+          "entities": [],
+          "keywords": [
+            "good",
+            "morning",
+            "earth",
+            "nasa",
+            "astronaut",
+            "chris",
+            "williams",
+            "took",
+            "photo",
+            "orbital"
+          ],
+          "pipeline_status": "in_filter",
+          "requires_human_review": false,
+          "review_reason": null
+        },
+        "source": {
+          "excerpt": "NASA astronaut Chris Williams took this photo of an orbital sunrise from the International Space Station on June 26, 2026. In 24 hours, the space station makes 16 orbits of Earth, traveling through 16 sunrises and sunsets. Learn more about the orbiting laboratory. Image credit: NASA/Chris Williams",
+          "url": "https://www.nasa.gov/image-article/good-morning-earth/",
+          "title": "Good Morning, Earth!",
+          "reliability": "high",
+          "published_at": "2026-07-02T14:41:24Z"
+        },
+        "context": {
+          "case_id": "https://www.nasa.gov/?post_type=image-article&p=1014204",
+          "scope": "science_research",
+          "notes": "signals: reliability=high confidence=0.6 category=general keywords=10"
+        }
+      },
+      "output": {
+        "ok": false,
+        "report": null,
+        "error": {
+          "error": "invalid_json",
+          "message": "resposta do LLM não é JSON válido: Unterminated string starting at: line 1 column 265 (char 264)",
+          "detail": {}
+        },
+        "run_id": "a1cbd9f0-94cb-4f9a-ae63-46f5edc54e69"
+      },
+      "elapsed_ms": 14995,
+      "usage": null
+    },
+    {
+      "input": {
+        "claim": {
+          "id": null,
+          "raw_item_id": "4a432763-c1e6-484a-826d-d4cabc6f85cc",
+          "statement": "NASA’s Webb Reveals Stars Sparking to Life in Cosmic Celebration",
+          "epistemic_status": "hypothesis",
+          "confidence_score": 0.6,
+          "source_reliability": "high",
+          "category": "general",
+          "country": null,
+          "scientific_area": null,
+          "entities": [],
+          "keywords": [
+            "nasa",
+            "webb",
+            "reveals",
+            "stars",
+            "sparking",
+            "life",
+            "cosmic",
+            "celebration",
+            "james",
+            "space"
+          ],
+          "pipeline_status": "in_filter",
+          "requires_human_review": false,
+          "review_reason": null
+        },
+        "source": {
+          "excerpt": "NASA’s James Webb Space Telescope has captured the infrared light of numerous features that previously were impossible to see beyond the thick dust of the FS Tau star system. In addition to myriad background galaxies that burst into view like fireworks for the United States’ 250th anniversary celebrations, this image flickers with a number of […]",
+          "url": "https://science.nasa.gov/missions/webb/nasas-webb-reveals-stars-sparking-to-life-in-cosmic-celebration/",
+          "title": "NASA’s Webb Reveals Stars Sparking to Life in Cosmic Celebration",
+          "reliability": "high",
+          "published_at": "2026-07-02T14:00:00Z"
+        },
+        "context": {
+          "case_id": "https://science.nasa.gov/missions/webb/nasas-webb-reveals-stars-sparking-to-life-in-cosmic-celebration/",
+          "scope": "science_research",
+          "notes": "signals: reliability=high confidence=0.6 category=general keywords=10"
+        }
+      },
+      "output": {
+        "ok": true,
+        "report": {
+          "claim_id": null,
+          "classifications": [
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "provenance",
+              "result": "flag",
+              "rationale": "O trecho indica que o Webb revelou luz infravermelha e características antes ocultas no sistema FS Tau e muitas galáxias de fundo, mas não afirma explicitamente que se observaram 'estrelas despertando para a vida' (formação estelar) como a afirmação sugere.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "epistemic_label",
+              "result": "pass",
+              "rationale": "Rotular como 'hypothesis' é prudente: a fonte apresenta imagens reveladoras e possíveis sinais, mas não fornece confirmação robusta de que novas estrelas efetivamente estão nascendo.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "calibration",
+              "result": "pass",
+              "rationale": "Uma confiança de 0.6 é compatível com evidência única de alta qualidade (imagens NASA) que é interpretativa e preliminar, justificando um grau de confiança moderado.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            }
+          ],
+          "decision": "escalate",
+          "requires_human_review": true,
+          "notes": null
+        },
+        "error": null,
+        "run_id": "a019d4fa-569a-4703-a03d-845529c7687d"
+      },
+      "elapsed_ms": 10751,
+      "usage": null
+    },
+    {
+      "input": {
+        "claim": {
+          "id": null,
+          "raw_item_id": "8665c394-4625-4d75-ad0a-a371666eaa55",
+          "statement": "What’s Up: July 2026 Skywatching Tips from NASA",
+          "epistemic_status": "hypothesis",
+          "confidence_score": 0.6,
+          "source_reliability": "high",
+          "category": "general",
+          "country": null,
+          "scientific_area": null,
+          "entities": [],
+          "keywords": [
+            "what",
+            "july",
+            "2026",
+            "skywatching",
+            "tips",
+            "nasa",
+            "predawn",
+            "moon",
+            "planets",
+            "meetup"
+          ],
+          "pipeline_status": "in_filter",
+          "requires_human_review": false,
+          "review_reason": null
+        },
+        "source": {
+          "excerpt": "A predawn Moon-and-planets meetup, a returning comet, a great chance to see the Milky Way, and Saturn’s rings at a new angle. Skywatching Highlights Transcript An early morning hangout with the Moon and planets, a comet swings by, prime time for the Milky Way, and Saturn’s rings shine at a new angle. That’s What’s Up […]",
+          "url": "https://science.nasa.gov/solar-system/whats-up-july-2026-skywatching-tips-from-nasa/",
+          "title": "What’s Up: July 2026 Skywatching Tips from NASA",
+          "reliability": "high",
+          "published_at": "2026-07-02T00:22:22Z"
+        },
+        "context": {
+          "case_id": "https://science.nasa.gov/solar-system/whats-up-july-2026-skywatching-tips-from-nasa/",
+          "scope": "science_research",
+          "notes": "signals: reliability=high confidence=0.6 category=general keywords=10"
+        }
+      },
+      "output": {
+        "ok": false,
+        "report": null,
+        "error": {
+          "error": "invalid_json",
+          "message": "resposta do LLM não é JSON válido: Expecting ',' delimiter: line 1 column 673 (char 672)",
+          "detail": {}
+        },
+        "run_id": "cea956ba-4169-46c2-8f55-00275503c202"
+      },
+      "elapsed_ms": 11970,
+      "usage": null
+    },
+    {
+      "input": {
+        "claim": {
+          "id": null,
+          "raw_item_id": "2ec1cc5f-d8a5-4dee-a192-38a76e1ee7de",
+          "statement": "NASA’s Chandra Examines Milky Way at Arms’ Length",
+          "epistemic_status": "hypothesis",
+          "confidence_score": 0.6,
+          "source_reliability": "high",
+          "category": "general",
+          "country": null,
+          "scientific_area": null,
+          "entities": [],
+          "keywords": [
+            "nasa",
+            "chandra",
+            "examines",
+            "milky",
+            "arms",
+            "length",
+            "result",
+            "using",
+            "observatory",
+            "shows"
+          ],
+          "pipeline_status": "in_filter",
+          "requires_human_review": false,
+          "review_reason": null
+        },
+        "source": {
+          "excerpt": "A new result using NASA’s Chandra X-ray Observatory shows that the outer spiral arms in the Milky Way galaxy may reach wider than previously thought. This finding may lead astronomers to adjust their understanding of our home galaxy’s structure. A team of astronomers made this discovery by making precise measurements of distances to dust clouds […]",
+          "url": "https://science.nasa.gov/missions/chandra/nasas-chandra-examines-milky-way-at-arms-length/",
+          "title": "NASA’s Chandra Examines Milky Way at Arms’ Length",
+          "reliability": "high",
+          "published_at": "2026-07-01T20:17:20Z"
+        },
+        "context": {
+          "case_id": "https://science.nasa.gov/missions/chandra/nasas-chandra-examines-milky-way-at-arms-length/",
+          "scope": "science_research",
+          "notes": "signals: reliability=high confidence=0.6 category=general keywords=10"
+        }
+      },
+      "output": {
+        "ok": true,
+        "report": {
+          "claim_id": null,
+          "classifications": [
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "provenance",
+              "result": "flag",
+              "rationale": "O trecho fala de um resultado específico sobre os braços espirais externos da Via Láctea, enquanto a afirmação é apenas um título genérico que sugere exame em geral, de forma muito menos específica do que a fonte.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "epistemic_label",
+              "result": "flag",
+              "rationale": "O texto da fonte já descreve um ‘new result’ observacional concreto, o que se aproxima mais de um achado empírico (confirmed_fact preliminar) do que de mera hipótese.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "calibration",
+              "result": "pass",
+              "rationale": "Uma confiança intermediária (0.6) é compatível com um resultado observacional único e relativamente recente, sem ser inflada nem excessivamente cética.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            }
+          ],
+          "decision": "escalate",
+          "requires_human_review": true,
+          "notes": null
+        },
+        "error": null,
+        "run_id": "0346a0e0-cec3-458d-aeaa-b892413fa953"
+      },
+      "elapsed_ms": 63971,
+      "usage": null
+    },
+    {
+      "input": {
+        "claim": {
+          "id": null,
+          "raw_item_id": "9aa90ab7-87d4-4488-ade2-7c20bf67c9d2",
+          "statement": "NASA Seeks Volunteers for New Yearlong Simulated Moon, Mars Mission",
+          "epistemic_status": "hypothesis",
+          "confidence_score": 0.6,
+          "source_reliability": "high",
+          "category": "science_research",
+          "country": null,
+          "scientific_area": null,
+          "entities": [],
+          "keywords": [
+            "nasa",
+            "seeks",
+            "volunteers",
+            "yearlong",
+            "simulated",
+            "moon",
+            "mars",
+            "mission",
+            "recruiting",
+            "research"
+          ],
+          "pipeline_status": "in_filter",
+          "requires_human_review": false,
+          "review_reason": null
+        },
+        "source": {
+          "excerpt": "NASA is recruiting research participants for the agency’s next simulated deep space mission. Beginning no earlier than August 2027, research volunteers will spend one year living and working in interplanetary environments at the agency’s Johnson Space Center in Houston, operating under isolated conditions expected during crewed missions to the Moon or Red Planet.&#160;Insights from this [&#8230;]",
+          "url": "https://www.nasa.gov/humans-in-space/nasa-seeks-volunteers-for-new-yearlong-simulated-moon-mars-mission/",
+          "title": "NASA Seeks Volunteers for New Yearlong Simulated Moon, Mars Mission",
+          "reliability": "high",
+          "published_at": "2026-07-01T16:15:14Z"
+        },
+        "context": {
+          "case_id": "https://www.nasa.gov/?p=1014022",
+          "scope": "science_research",
+          "notes": "signals: reliability=high confidence=0.6 category=science_research keywords=10"
+        }
+      },
+      "output": {
+        "ok": true,
+        "report": {
+          "claim_id": null,
+          "classifications": [
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "provenance",
+              "result": "pass",
+              "rationale": "O trecho da fonte diz explicitamente que a NASA está recrutando voluntários para uma missão simulada de um ano em ambiente interplanetário no Johnson Space Center a partir de agosto de 2027, alinhando-se diretamente à afirmação.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "epistemic_label",
+              "result": "flag",
+              "rationale": "Classificar como \"hypothesis\" subestima a força da evidência: trata‑se de um anúncio oficial de recrutamento, pelo que seria mais adequado rotular como \"confirmed_fact\" em vez de hipótese.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "calibration",
+              "result": "flag",
+              "rationale": "A confiança de 0.6 é baixa para uma evidência direta e de alta confiabilidade (anúncio oficial da NASA); a pontuação deveria ser mais alta para refletir isso.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            }
+          ],
+          "decision": "escalate",
+          "requires_human_review": true,
+          "notes": null
+        },
+        "error": null,
+        "run_id": "5faeaa54-6f5d-414e-95b4-b5e70ebb0a2d"
+      },
+      "elapsed_ms": 9140,
+      "usage": null
+    },
+    {
+      "input": {
+        "claim": {
+          "id": null,
+          "raw_item_id": "1f0ac322-b543-4a2d-a6dc-99e2f83e725a",
+          "statement": "LINK Spacecraft Set for Mission to Boost NASA’s Swift Observatory",
+          "epistemic_status": "hypothesis",
+          "confidence_score": 0.6,
+          "source_reliability": "high",
+          "category": "general",
+          "country": null,
+          "scientific_area": null,
+          "entities": [],
+          "keywords": [
+            "link",
+            "spacecraft",
+            "mission",
+            "boost",
+            "nasa",
+            "swift",
+            "observatory",
+            "first",
+            "kind",
+            "raise"
+          ],
+          "pipeline_status": "in_filter",
+          "requires_human_review": false,
+          "review_reason": null
+        },
+        "source": {
+          "excerpt": "A first-of-its-kind mission to raise the orbit of NASA’s Neil Gehrels Swift Observatory is poised for launch no earlier than Thursday, July 2, 5:09 a.m. EDT (9:09 p.m. UTC+12), from Kwajalein Atoll, part of the Republic of the Marshall Islands in the South Pacific Ocean. A robotic servicing spacecraft called LINK, built by Katalyst Space, will blast [&#8230;]",
+          "url": "https://www.nasa.gov/image-article/link-spacecraft-set-for-mission-to-boost-nasas-swift-observatory/",
+          "title": "LINK Spacecraft Set for Mission to Boost NASA’s Swift Observatory",
+          "reliability": "high",
+          "published_at": "2026-07-01T15:20:29Z"
+        },
+        "context": {
+          "case_id": "https://www.nasa.gov/?post_type=image-article&p=1013617",
+          "scope": "science_research",
+          "notes": "signals: reliability=high confidence=0.6 category=general keywords=10"
+        }
+      },
+      "output": {
+        "ok": true,
+        "report": {
+          "claim_id": null,
+          "classifications": [
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "provenance",
+              "result": "pass",
+              "rationale": "O trecho da fonte afirma explicitamente que a missão LINK, um veículo robótico para elevar a órbita do Swift, está programada para lançamento, sustentando a afirmação.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "epistemic_label",
+              "result": "fail",
+              "rationale": "Rotular como 'hypothesis' é incompatível — a fonte descreve um anúncio operativo/planejamento de missão, não uma hipótese científica.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "calibration",
+              "result": "flag",
+              "rationale": "Score 0.6 é baixo para uma declaração apoiada por fonte de alta confiabilidade e anúncio direto; a confiança justificaria ser mais alta (por exemplo ≥0.8).",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            }
+          ],
+          "decision": "reject",
+          "requires_human_review": false,
+          "notes": null
+        },
+        "error": null,
+        "run_id": "ec7104cb-6abf-4317-ae97-0b1914a46618"
+      },
+      "elapsed_ms": 10938,
+      "usage": null
+    }
+  ]
+}
