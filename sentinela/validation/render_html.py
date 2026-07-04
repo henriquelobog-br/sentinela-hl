@@ -105,6 +105,34 @@ def _item_card(item: dict[str, Any]) -> str:
 </div>'''
 
 
+
+def _metrics_panel(report):
+    s = report.get("summary", {})
+    src = report.get("source", {}) or {}
+    def row(label, value):
+        return (f'<div style="display:flex;justify-content:space-between;padding:6px 0;'
+                f'border-bottom:1px solid {_BORDER}"><span style="color:{_T2};font-size:13px">{_esc(label)}</span>'
+                f'<span style="color:{_T0};font-size:13px;font-variant-numeric:tabular-nums">{_esc(value)}</span></div>')
+    llm_ms = s.get("llm_ms", 0); n = max(s.get("total", 0), 1)
+    rows = "".join([
+        row("itens", s.get("total", 0)),
+        row("pass", s.get("pass", 0)),
+        row("escalate", s.get("escalate", 0)),
+        row("reject", s.get("reject", 0)),
+        row("error", s.get("error", 0)),
+        row("tempo total", f'{s.get("total_ms",0)} ms'),
+        row("tempo builder", f'{s.get("builder_ms",0)} ms'),
+        row("tempo llm", f'{llm_ms} ms ({round(llm_ms/n)} ms/item)'),
+        row("tokens", s.get("total_tokens", 0) or "—"),
+        row("modelo", report.get("model") or "—"),
+        row("feed", src.get("name") or "—"),
+    ])
+    return (f'<div style="background:{_BG1};border:1px solid {_BORDER2};border-radius:8px;'
+            f'padding:20px;margin-bottom:24px">'
+            f'<div style="color:{_T3};font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">pipeline</div>'
+            f'{rows}</div>')
+
+
 def render_html(report: dict[str, Any]) -> str:
     s = report.get("summary", {})
     summary_badges = " ".join([
@@ -136,6 +164,7 @@ def render_html(report: dict[str, Any]) -> str:
       {summary_badges}
     </div>
   </div>
+  {_metrics_panel(report)}
   {cards}
   <div style="color:{_T3};font-size:11px;text-align:center;margin-top:24px">
     registro completo em validation-*.json · decisão final humana é do curador

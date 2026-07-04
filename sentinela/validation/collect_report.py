@@ -26,15 +26,20 @@ from sentinela.engines.agent import evaluate
 from sentinela.validation.render_html import render_html
 
 
-def _run_item(inp: FilterAgentInput, llm: LLMClient) -> dict[str, Any]:
-    t0 = time.perf_counter()
-    out = evaluate(inp, llm)
-    ms = round((time.perf_counter() - t0) * 1000)
-    usage = getattr(llm, "last_usage", None)  # tokens, se o client expuser
+def _run_item(builder: ClaimBuilder, raw, llm: LLMClient) -> dict[str, Any]:
+    t_b = time.perf_counter()
+    inp = builder.build(raw)                       # RawItem -> FilterAgentInput
+    builder_ms = round((time.perf_counter() - t_b) * 1000)
+    t_l = time.perf_counter()
+    out = evaluate(inp, llm)                        # chamada ao LLM
+    llm_ms = round((time.perf_counter() - t_l) * 1000)
+    usage = getattr(llm, "last_usage", None)
     return {
         "input": inp.model_dump(mode="json"),
         "output": out.model_dump(mode="json"),
-        "elapsed_ms": ms,
+        "builder_ms": builder_ms,
+        "llm_ms": llm_ms,
+        "elapsed_ms": builder_ms + llm_ms,
         "usage": usage,
     }
 
@@ -43,8 +48,9 @@ def build_report(collector: Collector, source: Source, llm: LLMClient,
                  *, raw_xml: str | None = None, model: str | None = None) -> dict[str, Any]:
     builder = ClaimBuilder()
     raws = collector.collect(source, raw_xml=raw_xml) if raw_xml is not None else collector.collect(source)
-    items = [_run_item(builder.build(raw), llm) for raw in raws]
+    items = [_run_item(builder, raw, llm) for raw in raws]
     decisions = [i["output"].get("report", {}).get("decision") if i["output"]["ok"] else "error" for i in items]
+    total_tokens = sum((i["usage"] or {}).get("total_tokens", 0) for i in items if isinstance(i.get("usage"), dict))
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "model": model,
@@ -56,6 +62,9 @@ def build_report(collector: Collector, source: Source, llm: LLMClient,
             "reject": decisions.count("reject"),
             "error": decisions.count("error"),
             "total_ms": sum(i["elapsed_ms"] for i in items),
+            "builder_ms": sum(i["builder_ms"] for i in items),
+            "llm_ms": sum(i["llm_ms"] for i in items),
+            "total_tokens": total_tokens,
         },
         "items": items,
     }
