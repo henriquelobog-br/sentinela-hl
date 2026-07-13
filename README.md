@@ -164,3 +164,31 @@ Documento 112 — Pipeline n8n (Milestone 2), em sete etapas:
 
 This repository is proprietary. All rights reserved.
 No part of this project may be copied, modified or redistributed without prior authorization.
+
+## Estado da implementação
+
+### Fundação
+
+- [x] Documento 101 — Schema PostgreSQL / Supabase
+- [x] Documento 110 — Infraestrutura Docker
+- [x] Documento 111 — Estrutura e contratos Python
+- [x] Documento 112A — Contrato do agente
+- [x] Documento 113 — Agente de filtros
+
+### Pipeline de inteligência
+
+- [x] Documento 112.1 — Workflow n8n
+- [x] Documento 112.2A — Collector Adapter
+- [x] Documento 112.2B — Pipeline Collector → Builder → Agente
+- [x] Documento 112.2C — Evidence Builder
+- [x] Documento 112.4 — Validação científica real
+- [x] Documento 112.4 Rev 2 — Calibração e robustez
+- [x] Documento 112.5 — Persistência PostgreSQL / Supabase
+
+### Próximas etapas
+
+- [ ] Documento 112.6 — Geração do boletim científico
+- [ ] Painel privado de curadoria
+- [ ] Publicação em `boletim.henriquelobo.com`
+- [ ] Integração de novas fontes científicas e APIs
+- [ ] Perfil de interesses e conexões temáticas
