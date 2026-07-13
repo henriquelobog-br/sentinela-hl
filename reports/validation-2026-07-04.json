@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-04T20:15:30.923596+00:00",
+  "generated_at": "2026-07-04T21:05:15.328810+00:00",
   "model": "openai/gpt-5-mini",
   "source": {
     "name": "https://www.nasa.gov/rss/dyn/breaking_news.rss",
@@ -7,18 +7,21 @@
   },
   "summary": {
     "total": 10,
-    "pass": 0,
-    "escalate": 4,
-    "reject": 4,
-    "error": 2,
-    "total_ms": 184977
+    "pass": 2,
+    "escalate": 3,
+    "reject": 5,
+    "error": 0,
+    "total_ms": 199714,
+    "builder_ms": 15,
+    "llm_ms": 199699,
+    "total_tokens": 0
   },
   "items": [
     {
       "input": {
         "claim": {
           "id": null,
-          "raw_item_id": "6a926a2a-a6e0-4601-8732-0d6c75665ade",
+          "raw_item_id": "86c680fc-80fa-4108-b3b3-12da6e178540",
           "statement": "NASA’s Hubble Spies Stellar Sparkler for July 4th",
           "epistemic_status": "hypothesis",
           "confidence_score": 0.6,
@@ -53,7 +56,7 @@
         "context": {
           "case_id": "https://science.nasa.gov/missions/hubble/nasas-hubble-spies-stellar-sparkler-for-july-4th/",
           "scope": "science_research",
-          "notes": "signals: reliability=high confidence=0.6 category=general keywords=10"
+          "notes": "signals: reliability=high evidence=no-observation -> hypothesis | category=general keywords=10"
         }
       },
       "output": {
@@ -66,7 +69,7 @@
               "claim_id": null,
               "filter": "provenance",
               "result": "flag",
-              "rationale": "O trecho confirma que o Hubble produziu uma imagem cuja aparência lembra um 'sparkler', mas não sustenta explicitamente a parte 'for July 4th' nem indica data/ocasião, portanto só sustenta parcialmente a afirmação.",
+              "rationale": "A fonte descreve uma nova imagem do Hubble com estrelas que 'brilham como um sparkl(er)' em cores vermelhas, brancas e azuis, mas não menciona que a imagem foi feita ou divulgada especificamente 'para o 4 de Julho', portanto sustenta apenas parcialmente a formulação da afirmação.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
@@ -76,8 +79,8 @@
               "id": null,
               "claim_id": null,
               "filter": "epistemic_label",
-              "result": "fail",
-              "rationale": "Rotular como 'hypothesis' é inadequado: a declaração é uma descrição factual baseada numa imagem divulgada por NASA, não uma hipótese científica.",
+              "result": "flag",
+              "rationale": "O rótulo 'hypothesis' não é adequado: o trecho é uma descrição/interpretação direta de uma imagem (não uma hipótese científica), logo deveria ser rotulado como 'interpretation' ou, dependendo do contexto, como um facto reportado, em vez de 'hypothesis'.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
@@ -88,28 +91,30 @@
               "claim_id": null,
               "filter": "calibration",
               "result": "flag",
-              "rationale": "Score 0.6 é relativamente alto dado que a fonte apoia a descrição visual porém não apoia o vínculo temporal ('July 4th'), indicando confiança possivelmente inflada.",
+              "rationale": "A confidência de 0.6 é mais baixa do que justificaria a evidência direta de uma fonte de alta confiabilidade descrevendo a imagem; esperaria-se uma pontuação de confiança mais alta para uma alegação puramente descritiva suportada pela própria fonte.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
               "prompt_version": "filter_v1"
             }
           ],
-          "decision": "reject",
-          "requires_human_review": false,
+          "decision": "escalate",
+          "requires_human_review": true,
           "notes": null
         },
         "error": null,
-        "run_id": "83983257-7ecb-4dfb-9cb6-7395d763a155"
+        "run_id": "b238cf45-664d-4f0c-8215-4d87a8f70f43"
       },
-      "elapsed_ms": 11343,
+      "builder_ms": 1,
+      "llm_ms": 34443,
+      "elapsed_ms": 34444,
       "usage": null
     },
     {
       "input": {
         "claim": {
           "id": null,
-          "raw_item_id": "62f19b15-6318-40ca-be36-979f1af61c27",
+          "raw_item_id": "f6175c57-e1f5-49be-9da8-fb9d53ba3db3",
           "statement": "NASA’s Hubble Captures Crimson Cloud Sparkling with White, Blue Stars",
           "epistemic_status": "hypothesis",
           "confidence_score": 0.6,
@@ -144,7 +149,7 @@
         "context": {
           "case_id": "https://science.nasa.gov/missions/hubble/nasas-hubble-captures-crimson-cloud-sparkling-with-white-blue-stars/",
           "scope": "science_research",
-          "notes": "signals: reliability=high confidence=0.6 category=general keywords=10"
+          "notes": "signals: reliability=high evidence=no-observation -> hypothesis | category=general keywords=10"
         }
       },
       "output": {
@@ -157,7 +162,7 @@
               "claim_id": null,
               "filter": "provenance",
               "result": "pass",
-              "rationale": "O trecho da fonte diz explicitamente que estrelas azuis e brancas brilham contra gás carmesim em imagem do Hubble, sustentando diretamente a afirmação.",
+              "rationale": "O trecho da fonte descreve diretamente uma imagem do Hubble com estrelas azuis e brancas sobre gás carmesim, o que corresponde à afirmação.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
@@ -168,7 +173,7 @@
               "claim_id": null,
               "filter": "epistemic_label",
               "result": "fail",
-              "rationale": "Rotular como 'hypothesis' é incompatível: trata-se de descrição de observação direta (imagem do Hubble), não de uma hipótese.",
+              "rationale": "Classificar como 'hypothesis' é incompatível: trata‑se de uma descrição direta de uma observação/imagen, não de uma hipótese.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
@@ -179,7 +184,7 @@
               "claim_id": null,
               "filter": "calibration",
               "result": "flag",
-              "rationale": "Confidence_score 0.6 é subestimada diante de uma fonte direta e de alta confiabilidade; deveria ser mais alta para essa evidência observacional.",
+              "rationale": "A confiança 0.6 é baixa para uma observação direta suportada por fonte de alta confiabilidade; deveria ser mais elevada.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
@@ -191,16 +196,18 @@
           "notes": null
         },
         "error": null,
-        "run_id": "417821a8-03e3-49ff-8bfb-df4d3031cfa4"
+        "run_id": "2796eb9d-e99b-4be7-9fae-32a4dac101f5"
       },
-      "elapsed_ms": 9534,
+      "builder_ms": 3,
+      "llm_ms": 32404,
+      "elapsed_ms": 32407,
       "usage": null
     },
     {
       "input": {
         "claim": {
           "id": null,
-          "raw_item_id": "124ed9e5-cd82-47d9-aa5e-b0dd917d2ba8",
+          "raw_item_id": "f7901aa9-1e60-4971-8181-8d6c63d33325",
           "statement": "NASA’s Hubble Spots Star-Spangled Cosmic Scene",
           "epistemic_status": "hypothesis",
           "confidence_score": 0.6,
@@ -235,7 +242,7 @@
         "context": {
           "case_id": "https://science.nasa.gov/missions/hubble/nasas-hubble-spots-star-spangled-cosmic-scene/",
           "scope": "science_research",
-          "notes": "signals: reliability=high confidence=0.6 category=general keywords=10"
+          "notes": "signals: reliability=high evidence=no-observation -> hypothesis | category=general keywords=10"
         }
       },
       "output": {
@@ -248,7 +255,7 @@
               "claim_id": null,
               "filter": "provenance",
               "result": "pass",
-              "rationale": "O trecho da fonte diz explicitamente que a imagem do Hubble mostra mais de 500.000 estrelas em Messier 3, o que sustenta diretamente a formulação de que o Hubble ‘spotted’ uma cena estelar.",
+              "rationale": "O trecho da fonte diz explicitamente que a imagem do Hubble mostra mais de 500.000 estrelas coloridas em Messier 3, o que corresponde ao enunciado.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
@@ -259,7 +266,7 @@
               "claim_id": null,
               "filter": "epistemic_label",
               "result": "fail",
-              "rationale": "Classificar como 'hypothesis' é incorreto: a fonte apresenta uma observação direta (descrição de imagem), portanto deveria ser tratado como fato confirmado/relatado, não hipótese.",
+              "rationale": "Rotular como 'hypothesis' é incompatível com a força da evidência: trata‑se de uma observação direta reportada pela fonte, não de uma hipótese.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
@@ -269,8 +276,8 @@
               "id": null,
               "claim_id": null,
               "filter": "calibration",
-              "result": "fail",
-              "rationale": "A confiança 0.6 é insuficiente para uma observação direta reportada por uma fonte de alta confiabilidade; esperaria uma confiança substancialmente maior para este tipo de evidência.",
+              "result": "flag",
+              "rationale": "Confidence 0.6 é conservadora diante de uma fonte de alta confiabilidade que descreve uma observação direta; deveria ser mais alta, portanto a pontuação está subestimada.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
@@ -282,19 +289,21 @@
           "notes": null
         },
         "error": null,
-        "run_id": "20caa74f-c5cd-441d-a80b-dc591197be9f"
+        "run_id": "dfd0f4cd-e5f4-4905-9933-18fa60e52805"
       },
-      "elapsed_ms": 9295,
+      "builder_ms": 1,
+      "llm_ms": 39958,
+      "elapsed_ms": 39959,
       "usage": null
     },
     {
       "input": {
         "claim": {
           "id": null,
-          "raw_item_id": "596dea10-8cda-419d-bd9a-29afb5c938ba",
+          "raw_item_id": "19e9d06c-11eb-4849-9c07-e79dea1ddf8a",
           "statement": "NASA’s Artemis II Breaks Agency Streaming Record",
-          "epistemic_status": "hypothesis",
-          "confidence_score": 0.6,
+          "epistemic_status": "confirmed_fact",
+          "confidence_score": 0.75,
           "source_reliability": "high",
           "category": "general",
           "country": null,
@@ -326,7 +335,7 @@
         "context": {
           "case_id": "https://www.nasa.gov/?p=984447",
           "scope": "science_research",
-          "notes": "signals: reliability=high confidence=0.6 category=general keywords=10"
+          "notes": "signals: source=official(nasa.gov) evidence=observation(record) -> confirmed_fact | category=general keywords=10"
         }
       },
       "output": {
@@ -339,7 +348,7 @@
               "claim_id": null,
               "filter": "provenance",
               "result": "pass",
-              "rationale": "O trecho da fonte afirma explicitamente que a transmissão ‘set unprecedented viewership records’ e fornece um dado quantificado (>149.4 milhões de visualizações), sustentando diretamente a afirmação.",
+              "rationale": "O trecho oficial da fonte declara explicitamente que a cobertura estabeleceu 'unprecedented viewership records' e fornece um total mensurável (mais de 149,4 milhões de visualizações), portanto sustenta a afirmação.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
@@ -349,8 +358,8 @@
               "id": null,
               "claim_id": null,
               "filter": "epistemic_label",
-              "result": "flag",
-              "rationale": "A fonte é uma declaração autoritativa e quantificada da NASA consistente com um fato confirmado; rotular como 'hypothesis' subestima a força da evidência.",
+              "result": "pass",
+              "rationale": "O rótulo confirmed_fact é adequado porque a fonte é primária (NASA) e relata dados observáveis e uma declaração direta de recorde, indicando evidência robusta em apoio à afirmação.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
@@ -360,29 +369,31 @@
               "id": null,
               "claim_id": null,
               "filter": "calibration",
-              "result": "flag",
-              "rationale": "A confiança 0.6 é baixa perante uma fonte de alta confiabilidade que apresenta dados numéricos e afirmação direta; um score mais alto seria coerente com a qualidade/quantidade de evidência.",
+              "result": "pass",
+              "rationale": "A confiança de 0,75 é compatível com evidência direta vinda de fonte de alta confiabilidade; embora pudesse justificar um valor mais alto, não é incoerente com a qualidade e quantidade de evidência disponível.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
               "prompt_version": "filter_v1"
             }
           ],
-          "decision": "escalate",
-          "requires_human_review": true,
+          "decision": "pass",
+          "requires_human_review": false,
           "notes": null
         },
         "error": null,
-        "run_id": "b5fb43a8-97b7-4f58-bc3d-b52e360b0674"
+        "run_id": "a1770a39-9036-4949-9db9-2f734bc543d1"
       },
-      "elapsed_ms": 33040,
+      "builder_ms": 2,
+      "llm_ms": 9450,
+      "elapsed_ms": 9452,
       "usage": null
     },
     {
       "input": {
         "claim": {
           "id": null,
-          "raw_item_id": "19babdcf-5550-45af-8ff0-86faf9b6b0be",
+          "raw_item_id": "8dbaf8b3-6d0c-43d0-8a13-456e34b5523a",
           "statement": "Good Morning, Earth!",
           "epistemic_status": "hypothesis",
           "confidence_score": 0.6,
@@ -417,27 +428,65 @@
         "context": {
           "case_id": "https://www.nasa.gov/?post_type=image-article&p=1014204",
           "scope": "science_research",
-          "notes": "signals: reliability=high confidence=0.6 category=general keywords=10"
+          "notes": "signals: reliability=high evidence=no-observation -> hypothesis | category=general keywords=10"
         }
       },
       "output": {
-        "ok": false,
-        "report": null,
-        "error": {
-          "error": "invalid_json",
-          "message": "resposta do LLM não é JSON válido: Unterminated string starting at: line 1 column 265 (char 264)",
-          "detail": {}
+        "ok": true,
+        "report": {
+          "claim_id": null,
+          "classifications": [
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "provenance",
+              "result": "pass",
+              "rationale": "A fonte da NASA descreve explicitamente a foto de um 'orbital sunrise' tirada na ISS, portanto sustenta a afirmação vinculada ao nascer do sol orbital.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "epistemic_label",
+              "result": "fail",
+              "rationale": "Rotular como 'hypothesis' é incompatível: trata‑se de uma observação direta documentada pela NASA e não de uma hipótese.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "calibration",
+              "result": "flag",
+              "rationale": "A confiança de 0.6 é subestimada diante de evidência direta e de alta confiabilidade; justificaria‑se um score bem mais alto.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            }
+          ],
+          "decision": "reject",
+          "requires_human_review": false,
+          "notes": null
         },
-        "run_id": "a1cbd9f0-94cb-4f9a-ae63-46f5edc54e69"
+        "error": null,
+        "run_id": "e1dcfef5-845f-44a5-a355-fe17c825e08a"
       },
-      "elapsed_ms": 14995,
+      "builder_ms": 1,
+      "llm_ms": 13003,
+      "elapsed_ms": 13004,
       "usage": null
     },
     {
       "input": {
         "claim": {
           "id": null,
-          "raw_item_id": "4a432763-c1e6-484a-826d-d4cabc6f85cc",
+          "raw_item_id": "14cea4d4-dce7-4048-a7b2-52659e41292e",
           "statement": "NASA’s Webb Reveals Stars Sparking to Life in Cosmic Celebration",
           "epistemic_status": "hypothesis",
           "confidence_score": 0.6,
@@ -472,7 +521,7 @@
         "context": {
           "case_id": "https://science.nasa.gov/missions/webb/nasas-webb-reveals-stars-sparking-to-life-in-cosmic-celebration/",
           "scope": "science_research",
-          "notes": "signals: reliability=high confidence=0.6 category=general keywords=10"
+          "notes": "signals: reliability=high evidence=no-observation -> hypothesis | category=general keywords=10"
         }
       },
       "output": {
@@ -485,7 +534,7 @@
               "claim_id": null,
               "filter": "provenance",
               "result": "flag",
-              "rationale": "O trecho indica que o Webb revelou luz infravermelha e características antes ocultas no sistema FS Tau e muitas galáxias de fundo, mas não afirma explicitamente que se observaram 'estrelas despertando para a vida' (formação estelar) como a afirmação sugere.",
+              "rationale": "O trecho confirma que o Webb revelou recursos invisíveis antes no sistema FS Tau ao captar luz infravermelha, mas não afirma explicitamente que são 'estrelas surgindo à vida', logo sustenta parcialmente a alegação poética.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
@@ -496,7 +545,7 @@
               "claim_id": null,
               "filter": "epistemic_label",
               "result": "pass",
-              "rationale": "Rotular como 'hypothesis' é prudente: a fonte apresenta imagens reveladoras e possíveis sinais, mas não fornece confirmação robusta de que novas estrelas efetivamente estão nascendo.",
+              "rationale": "O rótulo 'hypothesis' é cauteloso e compatível com a natureza interpretativa de imagens astronômicas observacionais, não inflando a certeza além da evidência disponível.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
@@ -506,8 +555,8 @@
               "id": null,
               "claim_id": null,
               "filter": "calibration",
-              "result": "pass",
-              "rationale": "Uma confiança de 0.6 é compatível com evidência única de alta qualidade (imagens NASA) que é interpretativa e preliminar, justificando um grau de confiança moderado.",
+              "result": "flag",
+              "rationale": "A confiança de 0.6 é um pouco alta para um único trecho descritivo que mostra recursos revelados mas não fornece prova direta de formação estelar, indicando confiança ligeiramente inflada.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
@@ -519,16 +568,18 @@
           "notes": null
         },
         "error": null,
-        "run_id": "a019d4fa-569a-4703-a03d-845529c7687d"
+        "run_id": "7f3654c3-f01a-468c-bc9e-b290cedccb3a"
       },
-      "elapsed_ms": 10751,
+      "builder_ms": 2,
+      "llm_ms": 20088,
+      "elapsed_ms": 20090,
       "usage": null
     },
     {
       "input": {
         "claim": {
           "id": null,
-          "raw_item_id": "8665c394-4625-4d75-ad0a-a371666eaa55",
+          "raw_item_id": "e56d92d1-7447-406f-9c75-5fa605480b96",
           "statement": "What’s Up: July 2026 Skywatching Tips from NASA",
           "epistemic_status": "hypothesis",
           "confidence_score": 0.6,
@@ -563,27 +614,65 @@
         "context": {
           "case_id": "https://science.nasa.gov/solar-system/whats-up-july-2026-skywatching-tips-from-nasa/",
           "scope": "science_research",
-          "notes": "signals: reliability=high confidence=0.6 category=general keywords=10"
+          "notes": "signals: reliability=high evidence=no-observation -> hypothesis | category=general keywords=10"
         }
       },
       "output": {
-        "ok": false,
-        "report": null,
-        "error": {
-          "error": "invalid_json",
-          "message": "resposta do LLM não é JSON válido: Expecting ',' delimiter: line 1 column 673 (char 672)",
-          "detail": {}
+        "ok": true,
+        "report": {
+          "claim_id": null,
+          "classifications": [
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "provenance",
+              "result": "pass",
+              "rationale": "O trecho citado é exatamente o sumário das dicas de observação (Moon-and-planets meetup, cometa, Via Láctea, Anéis de Saturno) e sustenta o título/afirmação sobre ‘What’s Up: July 2026 Skywatching Tips from NASA’.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "epistemic_label",
+              "result": "fail",
+              "rationale": "Rotular como 'hypothesis' é inadequado: o conteúdo são dicas/relatos observacionais e previsões de eventos celestes, não uma hipótese científica.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            },
+            {
+              "id": null,
+              "claim_id": null,
+              "filter": "calibration",
+              "result": "flag",
+              "rationale": "Confidence 0.6 é moderada; dada a fonte de alta confiabilidade (NASA) e a natureza descritiva/previstiva do conteúdo, a confiança parece subestimada, mas não absurdamente incompatível.",
+              "detail": {},
+              "automated": true,
+              "model": "openrouter",
+              "prompt_version": "filter_v1"
+            }
+          ],
+          "decision": "reject",
+          "requires_human_review": false,
+          "notes": null
         },
-        "run_id": "cea956ba-4169-46c2-8f55-00275503c202"
+        "error": null,
+        "run_id": "4e039b40-36c2-4fc9-ad69-228ae04db3f2"
       },
-      "elapsed_ms": 11970,
+      "builder_ms": 1,
+      "llm_ms": 11510,
+      "elapsed_ms": 11511,
       "usage": null
     },
     {
       "input": {
         "claim": {
           "id": null,
-          "raw_item_id": "2ec1cc5f-d8a5-4dee-a192-38a76e1ee7de",
+          "raw_item_id": "12c14420-ab42-4ed4-9331-19d1f9338866",
           "statement": "NASA’s Chandra Examines Milky Way at Arms’ Length",
           "epistemic_status": "hypothesis",
           "confidence_score": 0.6,
@@ -618,7 +707,7 @@
         "context": {
           "case_id": "https://science.nasa.gov/missions/chandra/nasas-chandra-examines-milky-way-at-arms-length/",
           "scope": "science_research",
-          "notes": "signals: reliability=high confidence=0.6 category=general keywords=10"
+          "notes": "signals: reliability=high evidence=study(may) -> hypothesis | category=general keywords=10"
         }
       },
       "output": {
@@ -630,8 +719,8 @@
               "id": null,
               "claim_id": null,
               "filter": "provenance",
-              "result": "flag",
-              "rationale": "O trecho fala de um resultado específico sobre os braços espirais externos da Via Láctea, enquanto a afirmação é apenas um título genérico que sugere exame em geral, de forma muito menos específica do que a fonte.",
+              "result": "pass",
+              "rationale": "O trecho da fonte afirma explicitamente que resultados do Chandra mostram que os braços externos 'podem' atingir maior largura, sustentando a afirmação.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
@@ -641,8 +730,8 @@
               "id": null,
               "claim_id": null,
               "filter": "epistemic_label",
-              "result": "flag",
-              "rationale": "O texto da fonte já descreve um ‘new result’ observacional concreto, o que se aproxima mais de um achado empírico (confirmed_fact preliminar) do que de mera hipótese.",
+              "result": "pass",
+              "rationale": "O rótulo 'hypothesis' é adequado porque a fonte usa linguagem condicional ('may') e descreve um novo resultado sugestivo, não uma confirmação definitiva.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
@@ -653,28 +742,30 @@
               "claim_id": null,
               "filter": "calibration",
               "result": "pass",
-              "rationale": "Uma confiança intermediária (0.6) é compatível com um resultado observacional único e relativamente recente, sem ser inflada nem excessivamente cética.",
+              "rationale": "A confiança de 0.6 é coerente: trata‑se de um estudo novo e confiável com linguagem cautelosa, justificando uma confiança moderada, não muito alta nem muito baixa.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
               "prompt_version": "filter_v1"
             }
           ],
-          "decision": "escalate",
-          "requires_human_review": true,
+          "decision": "pass",
+          "requires_human_review": false,
           "notes": null
         },
         "error": null,
-        "run_id": "0346a0e0-cec3-458d-aeaa-b892413fa953"
+        "run_id": "05db7580-55c4-4ca4-8a0f-7904e1673f3c"
       },
-      "elapsed_ms": 63971,
+      "builder_ms": 2,
+      "llm_ms": 7347,
+      "elapsed_ms": 7349,
       "usage": null
     },
     {
       "input": {
         "claim": {
           "id": null,
-          "raw_item_id": "9aa90ab7-87d4-4488-ade2-7c20bf67c9d2",
+          "raw_item_id": "a60479e8-48c6-4bdf-8df4-e435431a4580",
           "statement": "NASA Seeks Volunteers for New Yearlong Simulated Moon, Mars Mission",
           "epistemic_status": "hypothesis",
           "confidence_score": 0.6,
@@ -709,7 +800,7 @@
         "context": {
           "case_id": "https://www.nasa.gov/?p=1014022",
           "scope": "science_research",
-          "notes": "signals: reliability=high confidence=0.6 category=science_research keywords=10"
+          "notes": "signals: reliability=high evidence=study(research) -> hypothesis | category=science_research keywords=10"
         }
       },
       "output": {
@@ -722,7 +813,7 @@
               "claim_id": null,
               "filter": "provenance",
               "result": "pass",
-              "rationale": "O trecho da fonte diz explicitamente que a NASA está recrutando voluntários para uma missão simulada de um ano em ambiente interplanetário no Johnson Space Center a partir de agosto de 2027, alinhando-se diretamente à afirmação.",
+              "rationale": "O trecho da fonte afirma explicitamente que a NASA está recrutando voluntários para uma missão simulada de um ano em condições isoladas, portanto sustenta a afirmação.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
@@ -732,8 +823,8 @@
               "id": null,
               "claim_id": null,
               "filter": "epistemic_label",
-              "result": "flag",
-              "rationale": "Classificar como \"hypothesis\" subestima a força da evidência: trata‑se de um anúncio oficial de recrutamento, pelo que seria mais adequado rotular como \"confirmed_fact\" em vez de hipótese.",
+              "result": "fail",
+              "rationale": "Rotular como 'hypothesis' é inadequado: a fonte de alta confiabilidade relata um fato operacional confirmado, não uma hipótese, devendo ser classificado como fato confirmado.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
@@ -744,28 +835,30 @@
               "claim_id": null,
               "filter": "calibration",
               "result": "flag",
-              "rationale": "A confiança de 0.6 é baixa para uma evidência direta e de alta confiabilidade (anúncio oficial da NASA); a pontuação deveria ser mais alta para refletir isso.",
+              "rationale": "A confiança de 0.6 subestima a força da evidência direta e autoritativa; a pontuação deveria ser mais alta para refletir a clareza e qualidade da fonte.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
               "prompt_version": "filter_v1"
             }
           ],
-          "decision": "escalate",
-          "requires_human_review": true,
+          "decision": "reject",
+          "requires_human_review": false,
           "notes": null
         },
         "error": null,
-        "run_id": "5faeaa54-6f5d-414e-95b4-b5e70ebb0a2d"
+        "run_id": "ae98c199-dc68-438b-a880-88f3507fe411"
       },
-      "elapsed_ms": 9140,
+      "builder_ms": 1,
+      "llm_ms": 7745,
+      "elapsed_ms": 7746,
       "usage": null
     },
     {
       "input": {
         "claim": {
           "id": null,
-          "raw_item_id": "1f0ac322-b543-4a2d-a6dc-99e2f83e725a",
+          "raw_item_id": "768f4e6b-de6f-496c-b586-0a8243335f0c",
           "statement": "LINK Spacecraft Set for Mission to Boost NASA’s Swift Observatory",
           "epistemic_status": "hypothesis",
           "confidence_score": 0.6,
@@ -800,7 +893,7 @@
         "context": {
           "case_id": "https://www.nasa.gov/?post_type=image-article&p=1013617",
           "scope": "science_research",
-          "notes": "signals: reliability=high confidence=0.6 category=general keywords=10"
+          "notes": "signals: reliability=high evidence=no-observation -> hypothesis | category=general keywords=10"
         }
       },
       "output": {
@@ -813,7 +906,7 @@
               "claim_id": null,
               "filter": "provenance",
               "result": "pass",
-              "rationale": "O trecho da fonte afirma explicitamente que a missão LINK, um veículo robótico para elevar a órbita do Swift, está programada para lançamento, sustentando a afirmação.",
+              "rationale": "O trecho da fonte declara claramente que a missão LINK, construída pela Katalyst Space, está programada para lançar com o objetivo de elevar a órbita do Neil Gehrels Swift Observatory, sustentando a afirmação.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
@@ -823,8 +916,8 @@
               "id": null,
               "claim_id": null,
               "filter": "epistemic_label",
-              "result": "fail",
-              "rationale": "Rotular como 'hypothesis' é incompatível — a fonte descreve um anúncio operativo/planejamento de missão, não uma hipótese científica.",
+              "result": "flag",
+              "rationale": "O rótulo 'hypothesis' subestima a força da evidência: a fonte de alta confiabilidade apresenta a missão como agendada/planejada, não como mera hipótese.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
@@ -835,21 +928,23 @@
               "claim_id": null,
               "filter": "calibration",
               "result": "flag",
-              "rationale": "Score 0.6 é baixo para uma declaração apoiada por fonte de alta confiabilidade e anúncio direto; a confiança justificaria ser mais alta (por exemplo ≥0.8).",
+              "rationale": "A confiança 0.6 é conservadora perante uma fonte única porém de alta confiabilidade que relata um lançamento agendado; um score mais alto seria mais coerente com a evidência apresentada.",
               "detail": {},
               "automated": true,
               "model": "openrouter",
               "prompt_version": "filter_v1"
             }
           ],
-          "decision": "reject",
-          "requires_human_review": false,
+          "decision": "escalate",
+          "requires_human_review": true,
           "notes": null
         },
         "error": null,
-        "run_id": "ec7104cb-6abf-4317-ae97-0b1914a46618"
+        "run_id": "909720dd-3902-4116-bfe3-80466b5e310e"
       },
-      "elapsed_ms": 10938,
+      "builder_ms": 1,
+      "llm_ms": 23751,
+      "elapsed_ms": 23752,
       "usage": null
     }
   ]
