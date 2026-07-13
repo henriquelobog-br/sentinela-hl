@@ -1,0 +1,182 @@
+             List of schemas
+        Name         |       Owner       
+---------------------+-------------------
+ _realtime           | postgres
+ auth                | supabase_admin
+ cron                | supabase_admin
+ extensions          | postgres
+ graphql             | supabase_admin
+ graphql_public      | supabase_admin
+ knowledge           | postgres
+ net                 | supabase_admin
+ pgbouncer           | pgbouncer
+ public              | pg_database_owner
+ raw                 | postgres
+ realtime            | supabase_admin
+ storage             | supabase_admin
+ supabase_functions  | supabase_admin
+ supabase_migrations | postgres
+ vault               | supabase_admin
+(16 rows)
+
+            List of relations
+ Schema |    Name     | Type  |  Owner   
+--------+-------------+-------+----------
+ raw    | cleanup_log | table | postgres
+ raw    | fetch_runs  | table | postgres
+ raw    | items       | table | postgres
+ raw    | sources     | table | postgres
+(4 rows)
+
+               List of relations
+  Schema   |      Name       | Type  |  Owner   
+-----------+-----------------+-------+----------
+ knowledge | bulletin_events | table | postgres
+ knowledge | bulletins       | table | postgres
+ knowledge | claims          | table | postgres
+ knowledge | classifications | table | postgres
+ knowledge | contradictions  | table | postgres
+ knowledge | events          | table | postgres
+(6 rows)
+
+                                          Table "raw.items"
+       Column       |           Type           | Collation | Nullable |           Default            
+--------------------+--------------------------+-----------+----------+------------------------------
+ id                 | uuid                     |           | not null | gen_random_uuid()
+ source_id          | uuid                     |           | not null | 
+ fetch_run_id       | uuid                     |           |          | 
+ external_id        | text                     |           |          | 
+ url                | text                     |           |          | 
+ title              | text                     |           |          | 
+ raw_payload        | jsonb                    |           |          | 
+ normalized_content | text                     |           |          | 
+ content_hash       | text                     |           |          | 
+ published_at       | timestamp with time zone |           |          | 
+ collected_at       | timestamp with time zone |           | not null | now()
+ pipeline_status    | pipeline_status          |           | not null | 'collected'::pipeline_status
+ duplicate_of       | uuid                     |           |          | 
+ created_at         | timestamp with time zone |           | not null | now()
+ updated_at         | timestamp with time zone |           | not null | now()
+Indexes:
+    "items_pkey" PRIMARY KEY, btree (id)
+    "idx_items_collected" btree (collected_at DESC)
+    "idx_items_content_hash" btree (content_hash)
+    "idx_items_status" btree (pipeline_status)
+    "uq_items_source_external" UNIQUE, btree (source_id, external_id) WHERE external_id IS NOT NULL
+Foreign-key constraints:
+    "items_duplicate_of_fkey" FOREIGN KEY (duplicate_of) REFERENCES raw.items(id) ON DELETE SET NULL
+    "items_fetch_run_id_fkey" FOREIGN KEY (fetch_run_id) REFERENCES raw.fetch_runs(id) ON DELETE SET NULL
+    "items_source_id_fkey" FOREIGN KEY (source_id) REFERENCES raw.sources(id) ON DELETE CASCADE
+Referenced by:
+    TABLE "knowledge.claims" CONSTRAINT "claims_raw_item_id_fkey" FOREIGN KEY (raw_item_id) REFERENCES raw.items(id) ON DELETE RESTRICT
+    TABLE "raw.items" CONSTRAINT "items_duplicate_of_fkey" FOREIGN KEY (duplicate_of) REFERENCES raw.items(id) ON DELETE SET NULL
+Policies (row security enabled): (none)
+Triggers:
+    trg_items_updated BEFORE UPDATE ON raw.items FOR EACH ROW EXECUTE FUNCTION set_updated_at()
+
+                                        Table "knowledge.claims"
+        Column         |           Type           | Collation | Nullable |           Default            
+-----------------------+--------------------------+-----------+----------+------------------------------
+ id                    | uuid                     |           | not null | gen_random_uuid()
+ raw_item_id           | uuid                     |           | not null | 
+ statement             | text                     |           | not null | 
+ epistemic_status      | epistemic_status         |           |          | 
+ confidence_score      | numeric(4,3)             |           |          | 
+ source_reliability    | reliability_tier         |           | not null | 'unknown'::reliability_tier
+ category              | text                     |           |          | 
+ country               | text                     |           |          | 
+ scientific_area       | text                     |           |          | 
+ entities              | jsonb                    |           | not null | '[]'::jsonb
+ keywords              | text[]                   |           | not null | '{}'::text[]
+ pipeline_status       | pipeline_status          |           | not null | 'in_filter'::pipeline_status
+ requires_human_review | boolean                  |           | not null | false
+ review_reason         | text                     |           |          | 
+ created_at            | timestamp with time zone |           | not null | now()
+ updated_at            | timestamp with time zone |           | not null | now()
+Indexes:
+    "claims_pkey" PRIMARY KEY, btree (id)
+    "idx_claims_epistemic" btree (epistemic_status)
+    "idx_claims_raw_item" btree (raw_item_id)
+    "idx_claims_review" btree (requires_human_review) WHERE requires_human_review
+    "idx_claims_status" btree (pipeline_status)
+Check constraints:
+    "claims_confidence_score_check" CHECK (confidence_score >= 0::numeric AND confidence_score <= 1::numeric)
+Foreign-key constraints:
+    "claims_raw_item_id_fkey" FOREIGN KEY (raw_item_id) REFERENCES raw.items(id) ON DELETE RESTRICT
+Referenced by:
+    TABLE "knowledge.classifications" CONSTRAINT "classifications_claim_id_fkey" FOREIGN KEY (claim_id) REFERENCES knowledge.claims(id) ON DELETE CASCADE
+    TABLE "knowledge.contradictions" CONSTRAINT "contradictions_claim_id_fkey" FOREIGN KEY (claim_id) REFERENCES knowledge.claims(id) ON DELETE CASCADE
+    TABLE "knowledge.events" CONSTRAINT "events_primary_claim_id_fkey" FOREIGN KEY (primary_claim_id) REFERENCES knowledge.claims(id) ON DELETE SET NULL
+Policies (row security enabled): (none)
+Triggers:
+    trg_claims_updated BEFORE UPDATE ON knowledge.claims FOR EACH ROW EXECUTE FUNCTION set_updated_at()
+
+                          Table "knowledge.classifications"
+     Column     |           Type           | Collation | Nullable |      Default      
+----------------+--------------------------+-----------+----------+-------------------
+ id             | uuid                     |           | not null | gen_random_uuid()
+ claim_id       | uuid                     |           | not null | 
+ filter         | filter_key               |           | not null | 
+ result         | filter_result            |           | not null | 
+ rationale      | text                     |           |          | 
+ detail         | jsonb                    |           | not null | '{}'::jsonb
+ automated      | boolean                  |           | not null | true
+ model          | text                     |           |          | 
+ created_at     | timestamp with time zone |           | not null | now()
+ prompt_version | text                     |           |          | 
+Indexes:
+    "classifications_pkey" PRIMARY KEY, btree (id)
+    "idx_classifications_prompt_version" btree (prompt_version)
+    "idx_classifications_result" btree (result)
+    "uq_classification_claim_filter" UNIQUE, btree (claim_id, filter)
+Foreign-key constraints:
+    "classifications_claim_id_fkey" FOREIGN KEY (claim_id) REFERENCES knowledge.claims(id) ON DELETE CASCADE
+Policies (row security enabled): (none)
+
+                                        Table "knowledge.events"
+        Column         |           Type           | Collation | Nullable |           Default            
+-----------------------+--------------------------+-----------+----------+------------------------------
+ id                    | uuid                     |           | not null | gen_random_uuid()
+ primary_claim_id      | uuid                     |           |          | 
+ title                 | text                     |           | not null | 
+ summary               | text                     |           |          | 
+ epistemic_status      | epistemic_status         |           | not null | 
+ confidence_score      | numeric(4,3)             |           |          | 
+ category              | text                     |           |          | 
+ country               | text                     |           |          | 
+ scientific_area       | text                     |           |          | 
+ entities              | jsonb                    |           | not null | '[]'::jsonb
+ keywords              | text[]                   |           | not null | '{}'::text[]
+ evidence              | jsonb                    |           | not null | '[]'::jsonb
+ occurred_at           | timestamp with time zone |           |          | 
+ pipeline_status       | pipeline_status          |           | not null | 'validated'::pipeline_status
+ requires_human_review | boolean                  |           | not null | false
+ review_decision       | review_decision          |           | not null | 'pending'::review_decision
+ validated_by          | text                     |           |          | 
+ validated_at          | timestamp with time zone |           |          | 
+ created_at            | timestamp with time zone |           | not null | now()
+ updated_at            | timestamp with time zone |           | not null | now()
+Indexes:
+    "events_pkey" PRIMARY KEY, btree (id)
+    "idx_events_category" btree (category)
+    "idx_events_epistemic" btree (epistemic_status)
+    "idx_events_occurred" btree (occurred_at DESC)
+    "idx_events_review" btree (review_decision)
+Check constraints:
+    "events_confidence_score_check" CHECK (confidence_score >= 0::numeric AND confidence_score <= 1::numeric)
+Foreign-key constraints:
+    "events_primary_claim_id_fkey" FOREIGN KEY (primary_claim_id) REFERENCES knowledge.claims(id) ON DELETE SET NULL
+Referenced by:
+    TABLE "knowledge.bulletin_events" CONSTRAINT "bulletin_events_event_id_fkey" FOREIGN KEY (event_id) REFERENCES knowledge.events(id) ON DELETE RESTRICT
+    TABLE "knowledge.contradictions" CONSTRAINT "contradictions_conflicting_event_id_fkey" FOREIGN KEY (conflicting_event_id) REFERENCES knowledge.events(id) ON DELETE CASCADE
+Policies:
+    POLICY "curator updates events" FOR UPDATE
+      TO authenticated
+      USING (true)
+      WITH CHECK (true)
+    POLICY "knowledge readable by authenticated" FOR SELECT
+      TO authenticated
+      USING (true)
+Triggers:
+    trg_events_updated BEFORE UPDATE ON knowledge.events FOR EACH ROW EXECUTE FUNCTION set_updated_at()
+
