@@ -43,7 +43,7 @@ def _seed(conn, ext, title, url, llm):
                   normalized_content="resumo.", content_hash=f"h-{ext}",
                   published_at=datetime.now(timezone.utc))
     inp = EvidenceBuilder().build(raw)
-    out = evaluate(inp, llm, structured=False)
+    out = evaluate(inp, llm)
     res = persist_pipeline_result(conn, raw, inp, out, src)
     conn.commit()
     return res

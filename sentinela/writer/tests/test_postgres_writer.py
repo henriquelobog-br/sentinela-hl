@@ -52,7 +52,7 @@ def conn():
 
 def _run(conn, raw, source, llm):
     inp = EvidenceBuilder().build(raw)
-    out = evaluate(inp, llm, structured=False)
+    out = evaluate(inp, llm)
     return persist_pipeline_result(conn, raw, inp, out, source)
 
 
@@ -126,7 +126,7 @@ def test_rollback_em_falha(conn):
 
     raw = _raw("rb1")
     inp = EvidenceBuilder().build(raw)
-    out = evaluate(inp, _verdict(), structured=False)
+    out = evaluate(inp, _verdict())
     # sabota: statement None viola not-null de knowledge.claims
     inp.claim.statement = None
     with pytest.raises(Exception):
