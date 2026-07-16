@@ -1,0 +1,53 @@
+researcher:
+  id: henrique_lobo
+  name: Henrique Lobo
+  version: 1
+
+domains:
+  atmospheric_science: 1.0
+  remote_sensing: 0.9
+
+concepts:
+  mineral_dust:
+    weight: 1.0
+
+regions:
+  south_atlantic:
+    weight: 1.0
+
+instruments:
+  calipso:
+    weight: 0.9
+  modis:
+    weight: 0.9
+
+preferred_sources:
+  nasa: 1.0
+  noaa: 1.0
+  usgs: 1.0
+  esa: 0.9
+  copernicus: 0.9
+
+excluded_topics:
+  - celebrity
+  - sports
+  - promotional content without scientific relevance
+  - purely commercial launches
+
+research_lines:
+  - id: transatlantic_mineral_dust
+    title: Transporte transatlântico de poeira mineral
+    description: >
+      Investigar mecanismos, recorrência e evidências do transporte
+      de poeira mineral da África para a América do Sul.
+    question: >
+      Existe transporte recorrente de poeira mineral da África
+      Austral para o Sudeste do Brasil?
+    priority: 1.0
+    concepts:
+      mineral_dust: 1.0
+    regions:
+      south_atlantic: 1.0
+    instruments:
+      calipso: 0.9
+      modis: 0.9
