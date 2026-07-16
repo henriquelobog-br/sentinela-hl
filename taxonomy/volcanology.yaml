@@ -1,0 +1,27 @@
+id: volcanology
+name: Volcanology
+description: vulcões e atividade vulcânica
+concepts:
+  - id: volcanic_eruption
+    name: Volcanic Eruption
+    domain: volcanology
+    synonyms: [eruption, volcanic event, erupcao]
+    related: [volcanic_ash, lava_flow, volcanic_alert]
+
+  - id: volcanic_alert
+    name: Volcanic Alert
+    domain: volcanology
+    synonyms: [volcano alert level, aviation color code, volcanic warning]
+    related: [volcanic_eruption]
+
+  - id: lava_flow
+    name: Lava Flow
+    domain: volcanology
+    synonyms: [lava, effusive eruption]
+    related: [volcanic_eruption]
+
+  - id: volcanic_gas
+    name: Volcanic Gas
+    domain: volcanology
+    synonyms: [so2 emission, sulfur dioxide plume, degassing]
+    related: [volcanic_eruption, aerosols]

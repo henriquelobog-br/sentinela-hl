@@ -1,0 +1,41 @@
+id: climate_science
+name: Climate Science
+description: clima, anomalias e eventos extremos
+concepts:
+  - id: climate_anomaly
+    name: Climate Anomaly
+    domain: climate_science
+    synonyms: [temperature anomaly, climate deviation, anomalous conditions]
+    related: [extreme_weather, sea_surface_temperature]
+
+  - id: extreme_weather
+    name: Extreme Weather
+    domain: climate_science
+    synonyms: [extreme event, severe weather, weather extreme]
+    related: [climate_anomaly, drought, heatwave]
+
+  - id: drought
+    name: Drought
+    domain: climate_science
+    parent: extreme_weather
+    synonyms: [dry spell, water scarcity]
+    related: [amazon_basin]
+
+  - id: heatwave
+    name: Heatwave
+    domain: climate_science
+    parent: extreme_weather
+    synonyms: [heat wave, extreme heat]
+    related: [climate_anomaly]
+
+  - id: enso
+    name: ENSO
+    domain: climate_science
+    synonyms: [el nino, la nina, el nino southern oscillation, southern oscillation]
+    related: [sea_surface_temperature, climate_anomaly]
+
+  - id: climate_record
+    name: Climate Record
+    domain: climate_science
+    synonyms: [warmest on record, record temperature, record-breaking]
+    related: [climate_anomaly]

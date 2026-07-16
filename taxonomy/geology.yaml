@@ -1,0 +1,27 @@
+id: geology
+name: Geology
+description: geologia, mineralogia e processos da crosta
+concepts:
+  - id: quartz_mineral
+    name: Quartz
+    domain: geology
+    synonyms: [silica, sio2, silicate minerals]
+    related: [mineral_dust]
+
+  - id: iron_oxides
+    name: Iron Oxides
+    domain: geology
+    synonyms: [hematite, goethite, iron oxide minerals]
+    related: [mineral_dust, ocean_fertilization]
+
+  - id: sediment_analysis
+    name: Sediment Analysis
+    domain: geology
+    synonyms: [sediment core, provenance analysis, mineralogical analysis]
+    related: [mineral_dust]
+
+  - id: soil_erosion
+    name: Soil Erosion
+    domain: geology
+    synonyms: [wind erosion, deflation, land degradation]
+    related: [mineral_dust, drought]

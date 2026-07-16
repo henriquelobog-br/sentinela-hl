@@ -1,0 +1,34 @@
+id: seismology
+name: Seismology
+description: terremotos e sismicidade
+concepts:
+  - id: earthquake
+    name: Earthquake
+    domain: seismology
+    synonyms: [seismic event, quake, tremor, terremoto, sismo]
+    related: [seismic_magnitude, tsunami, fault_rupture]
+
+  - id: seismic_magnitude
+    name: Seismic Magnitude
+    domain: seismology
+    synonyms: [magnitude, moment magnitude, mw scale, richter]
+    related: [earthquake]
+
+  - id: fault_rupture
+    name: Fault Rupture
+    domain: seismology
+    synonyms: [fault line, seismic fault, rupture zone]
+    related: [earthquake]
+
+  - id: tsunami
+    name: Tsunami
+    domain: seismology
+    synonyms: [tidal wave, seismic sea wave]
+    related: [earthquake]
+
+  - id: aftershock
+    name: Aftershock
+    domain: seismology
+    parent: earthquake
+    synonyms: [aftershock sequence, replica]
+    related: [seismic_magnitude]

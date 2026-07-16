@@ -1,0 +1,28 @@
+id: oceanography
+name: Oceanography
+description: oceanos, circulação e interação oceano-atmosfera
+concepts:
+  - id: ocean_circulation
+    name: Ocean Circulation
+    domain: oceanography
+    synonyms: [thermohaline circulation, amoc, meridional overturning, ocean currents]
+    related: [sea_surface_temperature, south_atlantic]
+
+  - id: sea_surface_temperature
+    name: Sea Surface Temperature
+    domain: oceanography
+    synonyms: [sst, ocean temperature, sea temperature]
+    related: [enso, climate_anomaly]
+
+  - id: ocean_fertilization
+    name: Ocean Fertilization
+    domain: oceanography
+    synonyms: [iron fertilization, nutrient deposition]
+    related: [mineral_dust, iron_oxides]
+    description: deposição de nutrientes (ex. ferro da poeira) no oceano
+
+  - id: marine_heatwave
+    name: Marine Heatwave
+    domain: oceanography
+    synonyms: [ocean heatwave, marine heat wave]
+    related: [sea_surface_temperature, climate_anomaly]
