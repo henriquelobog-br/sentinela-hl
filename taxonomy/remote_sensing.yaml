@@ -1,0 +1,28 @@
+id: remote_sensing
+name: Remote Sensing
+description: observação da Terra por satélite e reanálises
+concepts:
+  - id: satellite_observation
+    name: Satellite Observation
+    domain: remote_sensing
+    synonyms: [satellite data, earth observation, satellite imagery, satellite measurement]
+    related: [aerosol_optical_depth, satellite_instruments, reanalysis]
+
+  - id: satellite_instruments
+    name: Satellite Instruments
+    domain: remote_sensing
+    synonyms: [modis, calipso, viirs, tropomi, sentinel-5p, lidar profile]
+    related: [satellite_observation]
+    description: instrumentos de observação relevantes p/ aerossóis e atmosfera
+
+  - id: reanalysis
+    name: Reanalysis
+    domain: remote_sensing
+    synonyms: [merra-2, merra2, era5, reanalysis dataset, giovanni]
+    related: [atmospheric_transport, satellite_observation]
+
+  - id: satellite_failure
+    name: Satellite Failure
+    domain: remote_sensing
+    synonyms: [satellite malfunction, satellite loss, instrument failure, data gap]
+    related: [satellite_observation]

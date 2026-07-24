@@ -1,0 +1,39 @@
+id: regions
+name: Regions
+description: regiões geográficas de relevância científica (vocabulário compartilhado)
+concepts:
+  - id: south_atlantic
+    name: South Atlantic
+    domain: regions
+    synonyms: [atlantico sul, south atlantic ocean, south atlantic basin]
+    related: [atlantic_ocean, trade_winds]
+
+  - id: atlantic_ocean
+    name: Atlantic Ocean
+    domain: regions
+    synonyms: [atlantic, atlantic basin]
+    related: []
+
+  - id: southeast_brazil
+    name: Southeast Brazil
+    domain: regions
+    synonyms: [sudeste do brasil, espirito santo, vitoria es, southeastern brazil]
+    related: [south_atlantic]
+
+  - id: amazon_basin
+    name: Amazon Basin
+    domain: regions
+    synonyms: [amazonia, amazon rainforest, amazon]
+    related: [saharan_dust]
+
+  - id: southern_africa
+    name: Southern Africa
+    domain: regions
+    synonyms: [namibia, angola, namib desert, kalahari, africa austral]
+    related: [namib_dust, south_atlantic]
+
+  - id: sahara_region
+    name: Sahara
+    domain: regions
+    synonyms: [sahara desert, saharan africa, bodele depression]
+    related: [saharan_dust]

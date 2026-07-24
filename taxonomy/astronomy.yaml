@@ -1,0 +1,27 @@
+id: astronomy
+name: Astronomy
+description: astronomia e missões espaciais científicas
+concepts:
+  - id: space_mission
+    name: Space Mission
+    domain: astronomy
+    synonyms: [space probe, scientific mission, spacecraft launch]
+    related: [satellite_observation]
+
+  - id: telescope_observation
+    name: Telescope Observation
+    domain: astronomy
+    synonyms: [jwst, hubble, observatory, astronomical observation]
+    related: [astronomical_discovery]
+
+  - id: astronomical_discovery
+    name: Astronomical Discovery
+    domain: astronomy
+    synonyms: [exoplanet discovery, new celestial object, astronomical detection]
+    related: [telescope_observation]
+
+  - id: near_earth_object
+    name: Near-Earth Object
+    domain: astronomy
+    synonyms: [neo, asteroid approach, potentially hazardous asteroid, pha]
+    related: [astronomical_discovery]

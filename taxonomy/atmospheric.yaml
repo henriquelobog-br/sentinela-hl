@@ -1,0 +1,85 @@
+id: atmospheric_science
+name: Atmospheric Science
+description: física e dinâmica da atmosfera, aerossóis e transporte
+concepts:
+  - id: aerosols
+    name: Aerosols
+    domain: atmospheric_science
+    synonyms: [aerosol, atmospheric aerosols, particulate matter]
+    related: [atmospheric_transport, aerosol_optical_depth]
+    description: partículas em suspensão na atmosfera
+
+  - id: mineral_dust
+    name: Mineral Dust
+    domain: atmospheric_science
+    parent: aerosols
+    synonyms: [desert dust, aeolian dust, dust aerosol, soil dust]
+    related: [atmospheric_transport, trade_winds, iron_oxides, quartz_mineral]
+    description: poeira mineral de origem eólica
+
+  - id: saharan_dust
+    name: Saharan Dust
+    domain: atmospheric_science
+    parent: mineral_dust
+    synonyms: [sahara dust, saharan air layer, sal layer]
+    related: [amazon_basin, south_atlantic]
+
+  - id: namib_dust
+    name: Namib Dust
+    domain: atmospheric_science
+    parent: mineral_dust
+    synonyms: [namibian dust, kalahari dust, southern african dust]
+    related: [south_atlantic, southeast_brazil, southern_africa]
+
+  - id: volcanic_ash
+    name: Volcanic Ash
+    domain: atmospheric_science
+    parent: aerosols
+    synonyms: [ash plume, tephra]
+    related: [volcanic_eruption]
+
+  - id: smoke_aerosol
+    name: Smoke
+    domain: atmospheric_science
+    parent: aerosols
+    synonyms: [biomass burning smoke, wildfire smoke]
+    related: [amazon_basin]
+
+  - id: atmospheric_transport
+    name: Atmospheric Transport
+    domain: atmospheric_science
+    synonyms: [long-range transport, long range transport, intercontinental transport, transatlantic transport]
+    related: [trade_winds, atmospheric_circulation, pressure_levels]
+    description: transporte de massa/partículas em escala sinótica a global
+
+  - id: trade_winds
+    name: Trade Winds
+    domain: atmospheric_science
+    synonyms: [trades, alisios, easterlies]
+    related: [atmospheric_circulation, south_atlantic]
+
+  - id: atmospheric_circulation
+    name: Atmospheric Circulation
+    domain: atmospheric_science
+    synonyms: [general circulation, wind patterns, circulation anomaly]
+    related: [climate_anomaly, atmospheric_blocking]
+
+  - id: atmospheric_blocking
+    name: Atmospheric Blocking
+    domain: atmospheric_science
+    parent: atmospheric_circulation
+    synonyms: [blocking pattern, blocking anticyclone, omega block]
+    related: [extreme_weather]
+
+  - id: pressure_levels
+    name: Pressure Levels
+    domain: atmospheric_science
+    synonyms: [850 hpa, 700 hpa, 500 hpa, isobaric level, pressure surface]
+    related: [atmospheric_transport]
+    description: níveis isobáricos usados em análise de transporte
+
+  - id: aerosol_optical_depth
+    name: Aerosol Optical Depth
+    domain: atmospheric_science
+    synonyms: [aod, optical thickness, aerosol optical thickness]
+    related: [aerosols, satellite_observation]

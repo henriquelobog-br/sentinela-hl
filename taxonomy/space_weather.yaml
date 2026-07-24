@@ -1,0 +1,27 @@
+id: space_weather
+name: Space Weather
+description: atividade solar e seus efeitos na Terra
+concepts:
+  - id: solar_flare
+    name: Solar Flare
+    domain: space_weather
+    synonyms: [x-class flare, m-class flare, solar eruption]
+    related: [geomagnetic_storm, cme]
+
+  - id: cme
+    name: Coronal Mass Ejection
+    domain: space_weather
+    synonyms: [coronal mass ejection, solar plasma ejection]
+    related: [solar_flare, geomagnetic_storm]
+
+  - id: geomagnetic_storm
+    name: Geomagnetic Storm
+    domain: space_weather
+    synonyms: [kp index, geomagnetic disturbance, magnetic storm, aurora event]
+    related: [satellite_failure, cme]
+
+  - id: solar_cycle
+    name: Solar Cycle
+    domain: space_weather
+    synonyms: [solar maximum, solar minimum, sunspot cycle]
+    related: [solar_flare]

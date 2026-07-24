@@ -1,0 +1,27 @@
+id: geopolitics
+name: Geopolitics (factual analysis)
+description: eventos geopolíticos com impacto factual em ciência e observação
+concepts:
+  - id: armed_conflict
+    name: Armed Conflict
+    domain: geopolitics
+    synonyms: [war, military conflict, military escalation, invasion]
+    related: [airspace_closure, maritime_disruption]
+
+  - id: airspace_closure
+    name: Airspace Closure
+    domain: geopolitics
+    synonyms: [airspace restriction, no-fly zone, flight ban]
+    related: [armed_conflict]
+
+  - id: maritime_disruption
+    name: Maritime Disruption
+    domain: geopolitics
+    synonyms: [shipping disruption, port closure, naval blockade, shipping route]
+    related: [armed_conflict, ocean_circulation]
+
+  - id: scientific_sanctions
+    name: Scientific Sanctions
+    domain: geopolitics
+    synonyms: [research restrictions, data embargo, scientific cooperation suspension]
+    related: [armed_conflict, satellite_observation]
