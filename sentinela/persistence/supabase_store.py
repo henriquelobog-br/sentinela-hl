@@ -27,6 +27,21 @@ from .store import ResearcherSignalStoreResult
 _DEFAULT_TIMEOUT_SECONDS = 10.0
 
 
+def _build_headers(service_key: str) -> dict[str, str]:
+    """Headers de autenticação PostgREST conforme o formato da chave.
+
+    - Chave nova `sb_secret_...`: não é JWT — enviada somente como
+      `apikey` (enviá-la como `Authorization: Bearer` produz HTTP 401).
+    - Chave legada service_role (JWT): `apikey` + `Authorization: Bearer`.
+
+    A chave nunca é registrada em logs nem incluída em mensagens de erro.
+    """
+    headers = {"apikey": service_key}
+    if not service_key.startswith("sb_secret_"):
+        headers["authorization"] = f"Bearer {service_key}"
+    return headers
+
+
 class SupabaseResearcherSignalStore:
     """ResearcherSignalStore sobre PostgREST (`public.researcher_signals`).
 
@@ -80,8 +95,7 @@ class SupabaseResearcherSignalStore:
                 params={"on_conflict": "id"},
                 json=payload,
                 headers={
-                    "apikey": self._service_key,
-                    "authorization": f"Bearer {self._service_key}",
+                    **_build_headers(self._service_key),
                     "content-type": "application/json",
                     "prefer": "resolution=merge-duplicates,"
                     "return=representation",

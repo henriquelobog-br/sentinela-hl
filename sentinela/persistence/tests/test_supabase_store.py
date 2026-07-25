@@ -207,3 +207,52 @@ def test_resultado_deterministico():
 
     assert first == second
     assert first.persisted_ids == second.persisted_ids
+
+
+# ------------------------------------------- formatos de chave Supabase
+SB_SECRET_KEY = "sb_secret_test_key_123"
+LEGACY_JWT_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.legacy-jwt"
+
+
+def make_store_with_key(client, service_key: str):
+    return SupabaseResearcherSignalStore(
+        url=FAKE_URL,
+        service_key=service_key,
+        client=client,
+    )
+
+
+def test_sb_secret_nao_vai_em_authorization():
+    signals = single_signals()
+    client = FakeClient(response=FakeResponse([{"id": signals[0].id}]))
+
+    make_store_with_key(client, SB_SECRET_KEY).upsert_many(signals)
+
+    headers = client.calls[0]["headers"]
+    assert headers["apikey"] == SB_SECRET_KEY
+    assert "authorization" not in headers
+
+
+def test_jwt_legado_vai_em_apikey_e_authorization():
+    signals = single_signals()
+    client = FakeClient(response=FakeResponse([{"id": signals[0].id}]))
+
+    make_store_with_key(client, LEGACY_JWT_KEY).upsert_many(signals)
+
+    headers = client.calls[0]["headers"]
+    assert headers["apikey"] == LEGACY_JWT_KEY
+    assert headers["authorization"] == f"Bearer {LEGACY_JWT_KEY}"
+
+
+def test_erro_sem_credencial_sb_secret():
+    client = FakeClient(response=FakeResponse([], status_code=401))
+
+    with pytest.raises(ResearcherSignalStoreError) as excinfo:
+        make_store_with_key(client, SB_SECRET_KEY).upsert_many(
+            single_signals()
+        )
+
+    message = str(excinfo.value)
+    assert "401" in message
+    assert SB_SECRET_KEY not in message
+    assert SB_SECRET_KEY not in repr(excinfo.value.__cause__)
