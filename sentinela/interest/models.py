@@ -104,7 +104,17 @@ class ResearchLine(_StrictModel):
 
 class ResearchProfile(_StrictModel):
     researcher: ResearchIdentity
+    taxonomy_version: str = Field(min_length=1)
     domains: tuple[ResearchDomain, ...] = ()
+
+    @field_validator("taxonomy_version")
+    @classmethod
+    def validate_taxonomy_version(cls, value: str) -> str:
+        # 112.7F §8.4: armazenado sem whitespace nas extremidades, não vazio.
+        trimmed = value.strip()
+        if not trimmed:
+            raise ValueError("taxonomy_version não pode ser vazia")
+        return trimmed
     concepts: tuple[ResearchConcept, ...] = ()
     regions: tuple[ResearchRegion, ...] = ()
     instruments: tuple[ResearchInstrument, ...] = ()

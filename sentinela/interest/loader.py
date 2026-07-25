@@ -351,6 +351,22 @@ def _research_lines(
     return tuple(lines)
 
 
+def _taxonomy_version(taxonomy: Any) -> str:
+    """Proveniência normativa (112.7F §8.4): versão da Taxonomy usada na
+    construção do perfil. Nunca lida do YAML nem de default oculto."""
+
+    base = getattr(taxonomy, "taxonomy", taxonomy)
+    version = getattr(base, "version", None)
+
+    if not isinstance(version, str) or not version.strip():
+        raise ProfileLoadError(
+            "taxonomy.version deve ser string não vazia para preencher "
+            "ResearchProfile.taxonomy_version"
+        )
+
+    return version.strip()
+
+
 def load_research_profile(
     path: str | Path,
     taxonomy: Any,
@@ -389,6 +405,7 @@ def load_research_profile(
 
         profile = ResearchProfile(
             researcher=researcher,
+            taxonomy_version=_taxonomy_version(taxonomy),
             domains=_domains(raw.get("domains"), taxonomy),
             concepts=_canonical_weighted(
                 raw.get("concepts"),

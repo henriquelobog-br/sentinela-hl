@@ -1,5 +1,32 @@
-"""Research Profile — Documento 112.7B."""
+"""Research Profile (112.7B) e Interest Engine (112.7F)."""
 
+from .config import (
+    InterestChannelWeights,
+    InterestEngineConfig,
+    InterestEngineLimits,
+    InterestPriorityThresholds,
+    InterestReasonTemplates,
+    InterestReasonType,
+    InterestScoringConfig,
+)
+from .engine import (
+    InterestConceptMatch,
+    InterestEngine,
+    InterestMatchChannel,
+    InterestMatchScope,
+    InterestPriority,
+    InterestResult,
+    ResearchLineMatch,
+)
+from .errors import (
+    InterestEngineArithmeticError,
+    InterestEngineCompatibilityError,
+    InterestEngineConfigError,
+    InterestEngineError,
+    InterestEngineInputError,
+    InterestEngineVersionError,
+    InterestEventFingerprintMismatchError,
+)
 from .loader import ProfileLoadError, load_research_profile
 from .models import (
     PreferredSource,
@@ -14,6 +41,26 @@ from .models import (
 )
 
 __all__ = [
+    "InterestChannelWeights",
+    "InterestConceptMatch",
+    "InterestEngine",
+    "InterestEngineArithmeticError",
+    "InterestEngineCompatibilityError",
+    "InterestEngineConfig",
+    "InterestEngineConfigError",
+    "InterestEngineError",
+    "InterestEngineInputError",
+    "InterestEngineLimits",
+    "InterestEngineVersionError",
+    "InterestEventFingerprintMismatchError",
+    "InterestMatchChannel",
+    "InterestMatchScope",
+    "InterestPriority",
+    "InterestPriorityThresholds",
+    "InterestReasonTemplates",
+    "InterestReasonType",
+    "InterestResult",
+    "InterestScoringConfig",
     "PreferredSource",
     "ProfileLoadError",
     "ResearchConcept",
@@ -21,6 +68,7 @@ __all__ = [
     "ResearchIdentity",
     "ResearchInstrument",
     "ResearchLine",
+    "ResearchLineMatch",
     "ResearchProfile",
     "ResearchRegion",
     "ResolutionRecord",
