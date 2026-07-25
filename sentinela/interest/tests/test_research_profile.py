@@ -21,6 +21,7 @@ class FakeConcept:
 
 class FakeTaxonomy:
     def __init__(self):
+        self.version = "1"
         concepts = [
             FakeConcept(
                 "mineral_dust",
