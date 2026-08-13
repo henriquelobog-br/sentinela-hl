@@ -33,6 +33,17 @@ class EpistemicStatus(str, Enum):
     PRACTICAL_APPLICATION = "practical_application"
 
 
+class EventStatus(str, Enum):
+    """Semântica operacional da evidência, independente de prioridade."""
+    UNKNOWN = "unknown"
+    OBSERVED_FACT = "observed_fact"
+    OFFICIAL_ALERT = "official_alert"
+    FORECAST = "forecast"
+    MODEL_PROJECTION = "model_projection"
+    CATALOG_RECORD = "catalog_record"
+    REPORTED_EVENT = "reported_event"
+
+
 class PipelineStatus(str, Enum):
     """Estado de uma informação ao longo do pipeline."""
     COLLECTED = "collected"
@@ -205,8 +216,11 @@ class Event(_Base):
     title: str
     summary: Optional[str] = None
     epistemic_status: EpistemicStatus                  # rótulo FINAL (obrigatório)
+    event_status: EventStatus = EventStatus.UNKNOWN
     confidence_score: Optional[float] = Field(default=None, ge=0, le=1)
     category: Optional[str] = None
+    source: Optional[str] = None
+    supporting_sources: tuple[str, ...] = ()
     country: Optional[str] = None
     scientific_area: Optional[str] = None
     entities: list[dict[str, Any]] = Field(default_factory=list)

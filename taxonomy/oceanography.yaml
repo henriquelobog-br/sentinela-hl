@@ -26,3 +26,38 @@ concepts:
     domain: oceanography
     synonyms: [ocean heatwave, marine heat wave]
     related: [sea_surface_temperature, climate_anomaly]
+
+  - id: wave_height
+    name: Wave Height
+    domain: oceanography
+    synonyms: [significant wave height, altura de onda, altura significativa de onda]
+
+  - id: swell
+    name: Swell
+    domain: oceanography
+    synonyms: [swell wave, ondulação, marulho]
+
+  - id: wave_period
+    name: Wave Period
+    domain: oceanography
+    synonyms: [dominant wave period, período de onda, periodo de onda]
+
+  - id: ocean_current
+    name: Ocean Current
+    domain: oceanography
+    synonyms: [marine current, corrente oceânica, corrente marinha]
+
+  - id: tide
+    name: Tide
+    domain: oceanography
+    synonyms: [tidal, maré, mare]
+
+  - id: water_level
+    name: Water Level
+    domain: oceanography
+    synonyms: [sea level observation, nível da água, nivel da agua]
+
+  - id: marine_forecast
+    name: Marine Forecast
+    domain: oceanography
+    synonyms: [ocean forecast, previsão marítima, previsao maritima]

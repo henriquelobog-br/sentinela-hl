@@ -52,6 +52,10 @@ class _Candidate:
         "summary",
         "scientific_area",
         "category",
+        "source",
+        "supporting_sources",
+        "evidence",
+        "event_status",
         "occurred_at",
         "validated_at",
         "relevance_score",
@@ -76,6 +80,10 @@ class _Candidate:
         self.summary = event.summary
         self.scientific_area = event.scientific_area
         self.category = event.category
+        self.source = event.source
+        self.supporting_sources = event.supporting_sources
+        self.evidence = tuple(dict(item) for item in event.evidence)
+        self.event_status = event.event_status
         self.occurred_at = _as_utc(event.occurred_at)
         self.validated_at = _as_utc(event.validated_at)
         self.relevance_score = _normalize_zero(result.relevance_score)
@@ -315,6 +323,10 @@ class PrioritizedBulletinEngine:
             summary=representative.summary,
             scientific_area=representative.scientific_area,
             category=representative.category,
+            source=representative.source,
+            supporting_sources=representative.supporting_sources,
+            evidence=representative.evidence,
+            event_status=representative.event_status,
             occurred_at=representative.occurred_at,
             validated_at=representative.validated_at,
             relevance_score=representative.relevance_score,

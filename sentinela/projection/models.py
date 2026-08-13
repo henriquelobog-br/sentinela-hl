@@ -12,11 +12,12 @@ EventSignificance do 112.7E) — não duplica contratos.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from sentinela.interest.engine import InterestPriority
+from sentinela.core.models import EventStatus
+from sentinela.interest.engine import InterestConceptMatch, InterestPriority
 from sentinela.radar.models import EventSignificance
 
 
@@ -41,6 +42,11 @@ class ResearcherSignal(BaseModel):
     member_event_ids: tuple[str, ...]
     title: str
     summary: Optional[str]
+    category: Optional[str] = None
+    source: Optional[str] = None
+    supporting_sources: tuple[str, ...] = ()
+    evidence: tuple[dict[str, Any], ...] = ()
+    event_status: EventStatus = EventStatus.UNKNOWN
     occurred_at: Optional[datetime]
     validated_at: Optional[datetime]
 
@@ -50,6 +56,7 @@ class ResearcherSignal(BaseModel):
     relevance_score: float = Field(ge=0.0, le=1.0)
     significance_score: float = Field(ge=0.0, le=1.0)
     significance_level: EventSignificance
+    matched_concepts: tuple[InterestConceptMatch, ...] = ()
     reasons: tuple[str, ...]
     requires_human_review: bool
 

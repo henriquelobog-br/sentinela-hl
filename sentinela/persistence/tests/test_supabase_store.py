@@ -109,7 +109,10 @@ def test_payload_correto():
     assert call["json"] == [s.model_dump(mode="json") for s in signals]
     # nenhuma regra científica: o payload é exatamente a serialização pública
     assert call["json"][0]["priority_level"] == "urgent"
+    assert isinstance(call["json"][0]["matched_concepts"], list)
     assert isinstance(call["json"][0]["reasons"], list)
+    assert isinstance(call["json"][0]["supporting_sources"], list)
+    assert isinstance(call["json"][0]["evidence"], list)
     assert isinstance(call["json"][0]["member_event_ids"], list)
 
 

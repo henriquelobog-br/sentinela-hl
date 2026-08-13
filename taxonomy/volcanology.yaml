@@ -2,6 +2,18 @@ id: volcanology
 name: Volcanology
 description: vulcões e atividade vulcânica
 concepts:
+  - id: volcano
+    name: Volcano
+    domain: volcanology
+    synonyms: [volcanoes, vulcao]
+    related: [volcanic_activity, volcanic_eruption, volcanic_alert]
+
+  - id: volcanic_activity
+    name: Volcanic Activity
+    domain: volcanology
+    synonyms: [volcano activity, volcanic unrest]
+    related: [volcano, volcanic_eruption, volcanic_alert]
+
   - id: volcanic_eruption
     name: Volcanic Eruption
     domain: volcanology

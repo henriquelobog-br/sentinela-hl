@@ -10,11 +10,12 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from sentinela.core.models import Event
+from sentinela.core.models import EventStatus
 from sentinela.interest.engine import (
     InterestConceptMatch,
     InterestPriority,
@@ -126,6 +127,10 @@ class PrioritizedBulletinItem(_Base):
     summary: Optional[str]
     scientific_area: Optional[str]
     category: Optional[str]
+    source: Optional[str]
+    supporting_sources: tuple[str, ...]
+    evidence: tuple[dict[str, Any], ...]
+    event_status: EventStatus
     occurred_at: Optional[datetime]
     validated_at: Optional[datetime]
 

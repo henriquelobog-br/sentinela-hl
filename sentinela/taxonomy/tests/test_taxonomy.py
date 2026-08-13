@@ -130,6 +130,40 @@ def test_lookup_por_sinonimo_case_insensitive():
     assert idx.find_by_term("termo que não existe") is None
 
 
+def test_conceitos_oceanograficos_e_aliases_fatuais():
+    idx = TaxonomyIndex(load_taxonomy(TAXDIR))
+    expected = {
+        "significant wave height": "wave_height",
+        "altura significativa de onda": "wave_height",
+        "ondulação": "swell",
+        "marulho": "swell",
+        "dominant wave period": "wave_period",
+        "período de onda": "wave_period",
+        "corrente marinha": "ocean_current",
+        "maré": "tide",
+        "nível da água": "water_level",
+        "previsão marítima": "marine_forecast",
+    }
+    for term, concept_id in expected.items():
+        assert idx.find_by_term(term).id == concept_id
+    for absent in ("storm surge", "coastal flooding", "rogue wave", "rip current", "maritime hazard"):
+        assert idx.find_by_term(absent) is None
+
+
+def test_conceitos_meteorologicos_operacionais_e_aliases():
+    idx = TaxonomyIndex(load_taxonomy(TAXDIR))
+    expected = {
+        "temperatura extrema": "extreme_temperature",
+        "chuva intensa": "heavy_precipitation",
+        "vento forte": "strong_wind",
+        "baixa visibilidade": "low_visibility",
+        "alerta meteorológico": "weather_alert",
+        "heat wave": "heatwave",
+    }
+    for term, concept_id in expected.items():
+        assert idx.find_by_term(term).id == concept_id
+
+
 def test_hierarquia_ancestors():
     idx = TaxonomyIndex(load_taxonomy(TAXDIR))
     anc = [c.id for c in idx.ancestors("namib_dust")]

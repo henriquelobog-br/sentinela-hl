@@ -144,6 +144,10 @@ def test_projeta_boletim_com_um_item():
     assert signal.member_event_ids == item.member_event_ids
     assert signal.title == item.title
     assert signal.summary == item.summary
+    assert signal.category == item.category
+    assert signal.source == item.source
+    assert signal.supporting_sources == item.supporting_sources
+    assert signal.evidence == item.evidence
     assert signal.taxonomy_version == "1"
     assert (
         signal.algorithm_version
@@ -163,6 +167,7 @@ def test_preserva_scores_niveis_e_reasons():
     assert signal.relevance_score == item.relevance_score == 1.0
     assert signal.significance_score == item.significance_score == 1.0
     assert signal.significance_level is EventSignificance.CRITICAL
+    assert signal.matched_concepts == item.matched_concepts
     assert signal.reasons == item.reasons
     assert len(signal.reasons) > 0
     assert signal.requires_human_review is False
@@ -200,6 +205,7 @@ def test_serializacao_json():
     assert payload["priority_level"] == "urgent"
     assert payload["significance_level"] == "critical"
     assert payload["priority_score"] == 1.0
+    assert isinstance(payload["matched_concepts"], list)
     assert isinstance(payload["reasons"], list)
     assert payload["requires_human_review"] is False
 

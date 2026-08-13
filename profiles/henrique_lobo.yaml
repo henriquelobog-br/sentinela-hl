@@ -1,11 +1,12 @@
 researcher:
   id: henrique_lobo
   name: Henrique Lobo
-  version: 1
+  version: 6
 
 domains:
   atmospheric_science: 1.0
   remote_sensing: 0.9
+  geopolitics: 0.02
 
 concepts:
   mineral_dust:
@@ -51,3 +52,103 @@ research_lines:
     instruments:
       calipso: 0.9
       modis: 0.9
+
+  - id: middle_east_geopolitics
+    title: Segurança regional e diplomacia no Oriente Médio
+    description: >
+      Acompanhar segurança regional, escalada e desescalada, ações militares,
+      cessar-fogo, relações diplomáticas, negociações, cooperação bilateral e
+      normalização envolvendo Israel. O escopo geográfico inclui Israel,
+      Territórios Palestinos, Gaza, Cisjordânia, Irã, Líbano, Síria, Jordânia,
+      Egito, Arábia Saudita, Emirados Árabes Unidos, Bahrain, Marrocos, Iêmen,
+      Mar Vermelho e Estreito de Ormuz. Nos Acordos de Abraão, observar Israel
+      com UAE, Bahrain, Marrocos e eventual normalização com a Arábia Saudita.
+    question: >
+      Quais mudanças materiais de segurança, diplomacia, cessar-fogo e
+      normalização alteram as relações regionais de Israel no Oriente Médio?
+    priority: 0.70
+    concepts:
+      israel: 0.25
+      middle_east: 0.10
+      conflict: 0.25
+      military_action: 0.25
+      diplomacy: 0.20
+      peace: 0.12
+      ceasefire: 0.15
+      iran: 0.15
+      palestine: 0.15
+      abraham_accords: 0.25
+
+  - id: volcanology_monitoring
+    title: Monitoramento de atividade e alertas vulcânicos
+    description: >
+      Acompanhar mudanças de nível de alerta, unrest, atividade eruptiva,
+      erupções, emissões e cinzas vulcânicas registradas por observatórios
+      oficiais. A existência conhecida de um vulcão, sem mudança ou atividade,
+      não constitui por si só interesse elevado.
+    question: >
+      Quais mudanças materiais de alerta ou atividade vulcânica exigem
+      acompanhamento científico?
+    priority: 0.75
+    concepts:
+      volcano: 0.02
+      volcanic_activity: 0.08
+      volcanic_alert: 0.18
+      volcanic_eruption: 0.18
+      volcanic_ash: 0.20
+
+  - id: space_weather_monitoring
+    title: Monitoramento de clima espacial e atividade solar
+    description: >
+      Acompanhar explosões solares, ejeções de massa coronal, tempestades
+      geomagnéticas, partículas energéticas solares e choques interplanetários.
+      Uma CME observada não implica, por si só, trajetória ou impacto na Terra.
+    question: >
+      Quais eventos de atividade solar e clima espacial possuem relevância
+      científica para acompanhamento e possível interação com a Terra?
+    priority: 0.70
+    concepts:
+      geomagnetic_storm: 0.30
+      solar_flare: 0.17
+      cme: 0.10
+      interplanetary_shock: 0.22
+      solar_energetic_particles: 0.22
+
+  - id: oceanography_monitoring
+    title: Monitoramento oceanográfico
+    description: >
+      Acompanhar observações e previsões factuais de ondas, ondulação, período,
+      correntes, marés, nível da água e temperatura da superfície do mar.
+    question: >
+      Quais condições oceanográficas observadas ou previstas justificam
+      acompanhamento científico sem inferência automática de risco marítimo?
+    priority: 0.70
+    concepts:
+      wave_height: 0.18
+      swell: 0.16
+      wave_period: 0.12
+      ocean_current: 0.10
+      tide: 0.08
+      water_level: 0.14
+      sea_surface_temperature: 0.08
+      marine_forecast: 0.05
+
+  - id: climate_weather_monitoring
+    title: Monitoramento operacional de tempo e extremos atuais
+    description: >
+      Acompanhar alertas oficiais e previsões objetivas de temperatura extrema,
+      precipitação intensa, vento forte, baixa visibilidade e outros extremos
+      meteorológicos atuais, sem confundir previsão com observação ou projeção climática.
+    question: >
+      Quais alertas e condições meteorológicas atuais justificam acompanhamento
+      científico e operacional pelas regras genéricas do Sentinela?
+    priority: 0.70
+    concepts:
+      extreme_temperature: 0.20
+      heavy_precipitation: 0.18
+      strong_wind: 0.14
+      heatwave: 0.22
+      drought: 0.12
+      weather_alert: 0.18
+      low_visibility: 0.08
+      extreme_weather: 0.14

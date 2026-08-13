@@ -2,6 +2,72 @@ id: geopolitics
 name: Geopolitics (factual analysis)
 description: eventos geopolíticos com impacto factual em ciência e observação
 concepts:
+  - id: conflict
+    name: Conflict
+    domain: geopolitics
+    synonyms: [hostilities, conflict event]
+    related: [armed_conflict, military_action, peace, ceasefire]
+
+  - id: military_action
+    name: Military Action
+    domain: geopolitics
+    synonyms: [use of force, military operation, armed action]
+    related: [conflict, armed_conflict, ceasefire]
+
+  - id: protest
+    name: Protest
+    domain: geopolitics
+    synonyms: [protests, demonstration, civil demonstration]
+    related: [conflict, peace]
+
+  - id: diplomacy
+    name: Diplomacy
+    domain: geopolitics
+    synonyms: [diplomatic relations, bilateral relations, diplomatic cooperation]
+    related: [peace, ceasefire, abraham_accords]
+
+  - id: peace
+    name: Peace
+    domain: geopolitics
+    synonyms: [peace process, peaceful relations]
+    related: [diplomacy, ceasefire, conflict]
+
+  - id: ceasefire
+    name: Ceasefire
+    domain: geopolitics
+    synonyms: [cease-fire, truce, cessation of hostilities]
+    related: [peace, diplomacy, conflict]
+
+  - id: israel
+    name: Israel
+    domain: geopolitics
+    synonyms: [israeli]
+    related: [middle_east, palestine, abraham_accords]
+
+  - id: middle_east
+    name: Middle East
+    domain: geopolitics
+    synonyms: [middle eastern, mideast]
+    related: [israel, iran, palestine, abraham_accords]
+
+  - id: iran
+    name: Iran
+    domain: geopolitics
+    synonyms: [iranian]
+    related: [middle_east, conflict, diplomacy]
+
+  - id: palestine
+    name: Palestine
+    domain: geopolitics
+    synonyms: [palestinian, palestinian territories, gaza, west bank]
+    related: [israel, middle_east, conflict, peace]
+
+  - id: abraham_accords
+    name: Abraham Accords
+    domain: geopolitics
+    synonyms: [normalization agreements, normalisation agreements]
+    related: [israel, middle_east, diplomacy, peace]
+
   - id: armed_conflict
     name: Armed Conflict
     domain: geopolitics

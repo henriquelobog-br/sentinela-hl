@@ -39,3 +39,31 @@ concepts:
     domain: climate_science
     synonyms: [warmest on record, record temperature, record-breaking]
     related: [climate_anomaly]
+
+  - id: extreme_temperature
+    name: Extreme Temperature
+    domain: climate_science
+    parent: extreme_weather
+    synonyms: [temperature extreme, extreme cold, temperatura extrema, frio extremo]
+
+  - id: heavy_precipitation
+    name: Heavy Precipitation
+    domain: climate_science
+    parent: extreme_weather
+    synonyms: [heavy rain, intense precipitation, precipitação intensa, chuva intensa]
+
+  - id: strong_wind
+    name: Strong Wind
+    domain: climate_science
+    parent: extreme_weather
+    synonyms: [high wind, damaging wind, vento forte, ventos fortes]
+
+  - id: low_visibility
+    name: Low Visibility
+    domain: climate_science
+    synonyms: [reduced visibility, dense fog, baixa visibilidade, nevoeiro denso]
+
+  - id: weather_alert
+    name: Weather Alert
+    domain: climate_science
+    synonyms: [weather warning, weather advisory, alerta meteorológico, aviso meteorológico]

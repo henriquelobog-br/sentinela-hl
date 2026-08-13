@@ -25,3 +25,13 @@ concepts:
     domain: space_weather
     synonyms: [solar maximum, solar minimum, sunspot cycle]
     related: [solar_flare]
+
+  - id: solar_energetic_particles
+    name: Solar Energetic Particles
+    domain: space_weather
+    synonyms: [solar energetic particle event, solar energetic particles]
+
+  - id: interplanetary_shock
+    name: Interplanetary Shock
+    domain: space_weather
+    synonyms: [interplanetary shock, interplanetary shocks]
