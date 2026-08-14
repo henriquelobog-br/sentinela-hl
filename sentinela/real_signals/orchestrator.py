@@ -20,9 +20,10 @@ from sentinela.interest import (
     load_research_profile,
 )
 from sentinela.persistence import (
-    ResearcherSignalStore, ResearcherSignalStoreResult,
+    EventStore, EventStoreResult, ResearcherSignalStore, ResearcherSignalStoreResult,
     is_signal_eligible_for_persistence,
 )
+from sentinela.prioritized_bulletin.engine import _event_dedup_key
 from sentinela.prioritized_bulletin import (
     PrioritizedBulletinConfig, PrioritizedBulletinContext,
     PrioritizedBulletinDeduplicationPolicy, PrioritizedBulletinEngine,
@@ -94,6 +95,7 @@ class RealSignalRun:
     signals: tuple[ResearcherSignal, ...]
     result: RunResult
     persistence: ResearcherSignalStoreResult | None = None
+    event_persistence: EventStoreResult | None = None
     unmatched_terms: tuple[str, ...] = ()
     eligible_signal_ids: tuple[str, ...] = ()
 
@@ -160,7 +162,7 @@ def _configs(taxonomy_version: str):
 
 def _stable_group_signal(signal: ResearcherSignal, event_by_id: dict[str, Any]) -> ResearcherSignal:
     event = event_by_id[signal.representative_event_id]
-    group_id = str(event.primary_claim_id or event.id)
+    group_id = _event_dedup_key(event)[1]
     canonical = "|".join((signal.researcher_id, group_id, signal.research_profile_version, signal.taxonomy_version, signal.algorithm_version, signal.config_version))
     update: dict[str, Any] = {"id": hashlib.sha256(canonical.encode()).hexdigest()}
     if event.evidence:
@@ -252,7 +254,7 @@ def _pipeline(events: tuple[Any, ...], settings: RealSignalSettings) -> tuple[tu
     return signals, unmatched_terms
 
 
-def run_real_signals(*, settings: RealSignalSettings, sources: Iterable[str] = ("cams", "cmr", "merra2"), now: datetime | None = None, collectors: dict[str, Any] | None = None, store: ResearcherSignalStore | None = None) -> RealSignalRun:
+def run_real_signals(*, settings: RealSignalSettings, sources: Iterable[str] = ("cams", "cmr", "merra2"), now: datetime | None = None, collectors: dict[str, Any] | None = None, event_store: EventStore | None = None, store: ResearcherSignalStore | None = None) -> RealSignalRun:
     started_at = datetime.now(timezone.utc)
     current = (now or started_at).astimezone(timezone.utc)
     requested_sources = tuple(dict.fromkeys(sources))
@@ -358,6 +360,7 @@ def run_real_signals(*, settings: RealSignalSettings, sources: Iterable[str] = (
     if duplicate_count:
         results.append(CollectionResult(source="batch", duplicates=duplicate_count))
     events = tuple(sorted(unique.values(), key=lambda event: (event.occurred_at or current, str(event.id))))
+    event_persistence = event_store.upsert_many(events) if event_store is not None else None
     signals, unmatched_terms, eligible_signal_ids = _pipeline_with_eligibility(events, settings)
     eligible_id_set = set(eligible_signal_ids)
     eligible_signals = tuple(signal for signal in signals if signal.id in eligible_id_set)
@@ -388,7 +391,8 @@ def run_real_signals(*, settings: RealSignalSettings, sources: Iterable[str] = (
     )
     return RealSignalRun(
         collections=tuple(results), events=events, signals=signals,
-        result=result, persistence=persistence, unmatched_terms=unmatched_terms,
+        result=result, persistence=persistence, event_persistence=event_persistence,
+        unmatched_terms=unmatched_terms,
         eligible_signal_ids=eligible_signal_ids,
     )
 

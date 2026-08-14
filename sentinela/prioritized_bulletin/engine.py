@@ -41,6 +41,16 @@ from .models import (
 SUPPORTED_PRIORITIZED_BULLETIN_ALGORITHM_VERSION = "1.0"
 
 
+def _event_dedup_key(event: Event) -> tuple[str, str]:
+    if event.primary_claim_id is not None:
+        return ("PRIMARY_CLAIM", str(event.primary_claim_id))
+    if event.evidence:
+        canonical_group_id = event.evidence[0].get("canonical_group_id")
+        if canonical_group_id:
+            return ("CANONICAL_GROUP", str(canonical_group_id))
+    return ("EVENT_ID", str(event.id))
+
+
 class _Candidate:
     """Projeção defensiva (§12): captura de valores, imutável, sem
     referência ao Event original."""
@@ -71,11 +81,7 @@ class _Candidate:
 
     def __init__(self, event: Event, result: InterestResult) -> None:
         self.event_id = str(event.id)
-        self.dedup_key = (
-            ("PRIMARY_CLAIM", str(event.primary_claim_id))
-            if event.primary_claim_id is not None
-            else ("EVENT_ID", str(event.id))
-        )
+        self.dedup_key = _event_dedup_key(event)
         self.title = event.title
         self.summary = event.summary
         self.scientific_area = event.scientific_area

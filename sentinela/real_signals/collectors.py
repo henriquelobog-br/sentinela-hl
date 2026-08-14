@@ -98,9 +98,10 @@ def _event(
 ) -> Event:
     observation = "|".join((source, event_type, product, window, region))
     phenomenon = group or "|".join((source, event_type, product, region))
+    canonical_group_id = _uuid("phenomenon|" + phenomenon)
     return Event(
         id=_uuid("event|" + observation),
-        primary_claim_id=_uuid("phenomenon|" + phenomenon),
+        primary_claim_id=None,
         title=title,
         summary=summary,
         epistemic_status=EpistemicStatus.CONFIRMED_FACT,
@@ -110,7 +111,7 @@ def _event(
         scientific_area=scientific_area,
         entities=entities,
         keywords=keywords,
-        evidence=[{"text": evidence_text or ("mineral_dust" if event_type not in {"new_calipso_granule", "new_modis_aerosol_granule"} else "satellite_observation"), **evidence}],
+        evidence=[{"text": evidence_text or ("mineral_dust" if event_type not in {"new_calipso_granule", "new_modis_aerosol_granule"} else "satellite_observation"), "canonical_group_id": str(canonical_group_id), **evidence}],
         occurred_at=occurred_at,
         validated_at=occurred_at,
     )

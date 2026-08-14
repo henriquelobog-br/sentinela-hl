@@ -103,7 +103,8 @@ def test_firms_mesma_regiao_janela_idempotente():
     first = collect(snpp_rows=[viirs(), viirs(-10.05, -50.05, "2110")])
     second = collect(snpp_rows=[viirs(), viirs(-10.05, -50.05, "2110")])
     assert first.events[0].id == second.events[0].id
-    assert first.events[0].primary_claim_id == second.events[0].primary_claim_id
+    assert first.events[0].primary_claim_id is None
+    assert first.events[0].evidence[0]["canonical_group_id"] == second.events[0].evidence[0]["canonical_group_id"]
 
 
 def test_firms_proximidade_com_vulcao():
@@ -162,7 +163,8 @@ def test_firms_novo_sensor_atualiza_mesma_ocorrencia():
         noaa_rows=[viirs(-10.01, -50.01, "2130", satellite="N20")],
     ).events[0]
     assert initial.id == updated.id
-    assert initial.primary_claim_id == updated.primary_claim_id
+    assert initial.primary_claim_id is None
+    assert initial.evidence[0]["canonical_group_id"] == updated.evidence[0]["canonical_group_id"]
     assert len(initial.evidence[0]["member_event_ids"]) == 2
     assert len(updated.evidence[0]["member_event_ids"]) == 3
     assert initial.evidence[0]["occurrence_id"] == updated.evidence[0]["occurrence_id"]
@@ -171,7 +173,8 @@ def test_firms_novo_sensor_atualiza_mesma_ocorrencia():
 def test_firms_nova_passagem_no_mesmo_dia_atualiza_ocorrencia():
     initial = collect(snpp_rows=[viirs(time="0100")]).events[0]
     updated = collect(snpp_rows=[viirs(time="0100"), viirs(-10.01, -50.01, "1300")]).events[0]
-    assert initial.primary_claim_id == updated.primary_claim_id
+    assert initial.primary_claim_id is None
+    assert initial.evidence[0]["canonical_group_id"] == updated.evidence[0]["canonical_group_id"]
     assert initial.evidence[0]["occurrence_id"] == updated.evidence[0]["occurrence_id"]
     initial_signal = _pipeline((initial,), settings())[0][0]
     updated_signal = _pipeline((updated,), settings())[0][0]

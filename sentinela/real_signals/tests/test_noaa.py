@@ -149,7 +149,8 @@ def test_coops_idempotencia_e_nova_revisao_na_mesma_janela():
     revised = collect_coops(coops_payload([("2026-08-11 17:06", 1.3)]))
     assert first.events[0].id == same.events[0].id
     assert first.events[0].id != revised.events[0].id
-    assert first.events[0].primary_claim_id == revised.events[0].primary_claim_id
+    assert first.events[0].primary_claim_id is None
+    assert first.events[0].evidence[0]["canonical_group_id"] == revised.events[0].evidence[0]["canonical_group_id"]
 
 
 def ndbc_text(rows):
@@ -217,7 +218,7 @@ def test_ndbc_station_distinta_e_janela_distinta():
     waves = [event for event in result.events if event.category == "high_wave_observation"]
     assert len(waves) == 3
     assert len({event.id for event in waves}) == 3
-    assert len({event.primary_claim_id for event in waves}) == 2
+    assert len({event.evidence[0]["canonical_group_id"] for event in waves}) == 2
 
 
 def test_ndbc_lote_vazio_e_erro_sanitizado():
@@ -234,7 +235,8 @@ def test_ndbc_idempotencia():
     first_wave = next(event for event in first.events if event.category == "high_wave_observation")
     second_wave = next(event for event in second.events if event.category == "high_wave_observation")
     assert first_wave.id == second_wave.id
-    assert first_wave.primary_claim_id == second_wave.primary_claim_id
+    assert first_wave.primary_claim_id is None
+    assert first_wave.evidence[0]["canonical_group_id"] == second_wave.evidence[0]["canonical_group_id"]
 
 
 def test_possible_forecast_observation_match_nao_funde_identidades():
@@ -249,7 +251,7 @@ def test_possible_forecast_observation_match_nao_funde_identidades():
     matches = possible_forecast_observation_matches((observed,), (forecast,))
     assert matches[0]["kind"] == "possible_forecast_observation_match"
     assert matches[0]["ndbc_event_id"] != matches[0]["openmeteo_marine_event_id"]
-    assert observed.primary_claim_id != forecast.primary_claim_id
+    assert observed.evidence[0]["canonical_group_id"] != forecast.evidence[0]["canonical_group_id"]
 
 
 def test_possible_match_exige_fenomeno_compativel():

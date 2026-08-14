@@ -91,13 +91,21 @@ def test_usgs_revisao_mantem_grupo_e_muda_evento():
     first = UsgsCollector(settings(), Client([{"features": [usgs_feature(updated=1785848400000)]}])).collect(NOW)
     second = UsgsCollector(settings(), Client([{"features": [usgs_feature(updated=1785852000000)]}])).collect(NOW)
     assert first.events[0].id != second.events[0].id
-    assert first.events[0].primary_claim_id == second.events[0].primary_claim_id
+    assert first.events[0].primary_claim_id is None
+    assert second.events[0].primary_claim_id is None
+    assert (
+        first.events[0].evidence[0]["canonical_group_id"]
+        == second.events[0].evidence[0]["canonical_group_id"]
+    )
 
 
 def test_usgs_eventos_distintos_nao_agrupam():
     result = UsgsCollector(settings(), Client([{"features": [usgs_feature("a"), usgs_feature("b")]}])).collect(NOW)
     assert len(result.events) == 2
-    assert result.events[0].primary_claim_id != result.events[1].primary_claim_id
+    assert (
+        result.events[0].evidence[0]["canonical_group_id"]
+        != result.events[1].evidence[0]["canonical_group_id"]
+    )
 
 
 def test_usgs_sem_coordenadas():
@@ -568,7 +576,8 @@ def test_donki_idempotencia_e_atualizacao_da_mesma_atividade():
     first_signal = _pipeline_with_eligibility(first.events, settings())[0][0]
     updated_signal = _pipeline_with_eligibility(updated.events, settings())[0][0]
     assert first.events[0].id != updated.events[0].id
-    assert first.events[0].primary_claim_id == updated.events[0].primary_claim_id
+    assert first.events[0].primary_claim_id is None
+    assert first.events[0].evidence[0]["canonical_group_id"] == updated.events[0].evidence[0]["canonical_group_id"]
     assert first_signal.id == updated_signal.id
 
 

@@ -111,7 +111,8 @@ def test_nws_atualizacao_mantem_grupo_e_muda_evento():
         references=[{"identifier": "urn:oid:alert-1"}],
     ))[0].events[0]
     assert first.id != updated.id
-    assert first.primary_claim_id == updated.primary_claim_id
+    assert first.primary_claim_id is None
+    assert first.evidence[0]["canonical_group_id"] == updated.evidence[0]["canonical_group_id"]
     first_signal = _pipeline_with_eligibility((first,), settings())[0][0]
     updated_signal = _pipeline_with_eligibility((updated,), settings())[0][0]
     assert first_signal.id == updated_signal.id
@@ -126,7 +127,7 @@ def test_nws_alertas_distintos_com_mesmo_titulo_nao_agrupam():
     events = collect(first, second)[0].events
     assert len(events) == 2
     assert events[0].title == events[1].title
-    assert events[0].primary_claim_id != events[1].primary_claim_id
+    assert events[0].evidence[0]["canonical_group_id"] != events[1].evidence[0]["canonical_group_id"]
 
 
 def test_nws_alerta_expirado_e_fora_do_escopo_sao_descartados():
@@ -171,7 +172,8 @@ def test_nws_idempotencia():
     first = collect(alert(event="Tornado Warning"))[0]
     second = collect(alert(event="Tornado Warning"))[0]
     assert first.events[0].id == second.events[0].id
-    assert first.events[0].primary_claim_id == second.events[0].primary_claim_id
+    assert first.events[0].primary_claim_id is None
+    assert first.events[0].evidence[0]["canonical_group_id"] == second.events[0].evidence[0]["canonical_group_id"]
 
 
 def test_openmeteo_weather_continua_previsao_e_nao_alerta_oficial():

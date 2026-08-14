@@ -20,7 +20,8 @@ from sentinela.core.models import Event
 
 _ELIGIBLE_SQL = """
 select id, primary_claim_id, title, summary, epistemic_status, confidence_score,
-       category, country, scientific_area, entities, keywords, evidence,
+       event_status, category, source, supporting_sources, country,
+       scientific_area, entities, keywords, evidence,
        occurred_at, pipeline_status, requires_human_review, review_decision,
        validated_by, validated_at
   from knowledge.events
@@ -71,6 +72,7 @@ def _coerce(row: dict) -> dict:
         out["confidence_score"] = float(out["confidence_score"])
 
     out["keywords"] = list(out.get("keywords") or [])
+    out["supporting_sources"] = tuple(out.get("supporting_sources") or [])
     out["entities"] = out.get("entities") or []
     out["evidence"] = out.get("evidence") or []
 

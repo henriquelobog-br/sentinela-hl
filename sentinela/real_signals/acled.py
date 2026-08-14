@@ -235,14 +235,14 @@ class AcledCollector:
         ]
         stable_id = _uuid(f"acled-event|{identifier}")
         return Event(
-            id=stable_id, primary_claim_id=stable_id,
+            id=stable_id, primary_claim_id=None,
             title=f"{title_prefix} registrado em {location}, {country}", summary=summary,
             epistemic_status=EpistemicStatus.CONFIRMED_FACT, category=category,
             event_status=EventStatus.REPORTED_EVENT,
             source="ACLED",
             country=country, scientific_area="scientific_geopolitics",
             entities=entities, keywords=list(dict.fromkeys(concepts)),
-            evidence=[{"text": base_concepts[0] if base_concepts else (concepts[0] if concepts else "strategic_development"), **evidence}],
+            evidence=[{"text": base_concepts[0] if base_concepts else (concepts[0] if concepts else "strategic_development"), "canonical_group_id": str(stable_id), **evidence}],
             occurred_at=occurred, validated_at=occurred,
         )
 

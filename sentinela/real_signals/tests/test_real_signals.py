@@ -230,7 +230,8 @@ def test_cmr_idempotencia_entre_processos_independentes():
     )
 
     assert first.events[0].id == second.events[0].id
-    assert first.events[0].primary_claim_id == second.events[0].primary_claim_id
+    assert first.events[0].primary_claim_id is None
+    assert first.events[0].evidence[0]["canonical_group_id"] == second.events[0].evidence[0]["canonical_group_id"]
     assert first_run.signals[0].id == second_run.signals[0].id
 
 
@@ -406,7 +407,7 @@ def test_duas_regioes_e_duas_janelas():
     rows = [cams_row("central_south_atlantic", valid_time="2026-08-04T06:00:00Z"), cams_row("central_south_atlantic", valid_time="2026-08-04T12:00:00Z"), cams_row("east_south_atlantic")]
     result = cams_result(*rows)
     assert len({event.id for event in result.events}) == len(result.events)
-    assert len({event.primary_claim_id for event in result.events if event.category == "dust_transport_forecast"}) == 2
+    assert len({event.evidence[0]["canonical_group_id"] for event in result.events if event.category == "dust_transport_forecast"}) == 2
 
 
 def test_nova_janela_atualiza_mesmo_sinal_agrupado():

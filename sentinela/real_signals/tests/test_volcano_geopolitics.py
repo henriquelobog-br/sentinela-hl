@@ -126,7 +126,8 @@ def test_volcano_alteracao_alerta_mantem_grupo():
     first = volcano_result([elevated("n1", "ADVISORY", "YELLOW")], detail_rows=[detail(section())])
     second = volcano_result([elevated("n2", "WATCH", "ORANGE")], detail_rows=[detail(section(alert="WATCH", color="ORANGE"))])
     assert first.events[0].id != second.events[0].id
-    assert first.events[0].primary_claim_id == second.events[0].primary_claim_id
+    assert first.events[0].primary_claim_id is None
+    assert first.events[0].evidence[0]["canonical_group_id"] == second.events[0].evidence[0]["canonical_group_id"]
 
 
 def test_volcano_campos_ausentes():

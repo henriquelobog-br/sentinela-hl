@@ -168,7 +168,8 @@ def test_atualizacao_do_event_id_mantem_identidade_e_usa_revisao_mais_nova():
     assert result.events[0].evidence[0]["timestamp"] == "200"
     first, _ = collect([row(timestamp="100")])
     assert first.events[0].id == result.events[0].id
-    assert first.events[0].primary_claim_id == result.events[0].primary_claim_id
+    assert first.events[0].primary_claim_id is None
+    assert first.events[0].evidence[0]["canonical_group_id"] == result.events[0].evidence[0]["canonical_group_id"]
 
 
 def test_paginacao():

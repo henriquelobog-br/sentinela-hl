@@ -219,8 +219,11 @@ def test_climate_idempotencia_e_agrupamento_mensal():
     first = collect(payload(target_temp=23.0, target_precip=150.0))
     second = collect(payload(target_temp=23.0, target_precip=150.0))
     assert [event.id for event in first.events] == [event.id for event in second.events]
-    assert [event.primary_claim_id for event in first.events] == [event.primary_claim_id for event in second.events]
-    assert len({event.primary_claim_id for event in first.events}) == 2
+    assert all(event.primary_claim_id is None for event in first.events)
+    assert [event.evidence[0]["canonical_group_id"] for event in first.events] == [
+        event.evidence[0]["canonical_group_id"] for event in second.events
+    ]
+    assert len({event.evidence[0]["canonical_group_id"] for event in first.events}) == 2
 
 
 def test_climate_nao_declara_extremo_seca_ou_observacao():
