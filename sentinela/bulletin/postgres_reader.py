@@ -27,6 +27,7 @@ select id, primary_claim_id, title, summary, epistemic_status, confidence_score,
   from knowledge.events
  where pipeline_status = any(%(statuses)s::public.pipeline_status[])
    and review_decision <> 'rejected'
+   and publication_approved
  order by
        requires_human_review asc,
        confidence_score desc nulls last,

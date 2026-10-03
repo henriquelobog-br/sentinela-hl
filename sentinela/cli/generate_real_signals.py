@@ -5,7 +5,10 @@ from __future__ import annotations
 import argparse
 import sys
 
-from sentinela.persistence import SupabaseResearcherSignalStore
+from sentinela.persistence import (
+    SupabasePipelineRunAuditStore,
+    SupabaseResearcherSignalStore,
+)
 from sentinela.real_signals import RealSignalSettings, run_real_signals
 
 OPERATIONAL_SOURCES = (
@@ -29,8 +32,18 @@ def main(argv: list[str] | None = None) -> int:
     try:
         settings = RealSignalSettings.from_env()
         store = SupabaseResearcherSignalStore(timeout=settings.timeout_seconds) if args.persist else None
+        audit_store = SupabasePipelineRunAuditStore(
+            timeout=settings.timeout_seconds
+        )
         sources = OPERATIONAL_SOURCES if args.source == "all" else (args.source,)
-        run = run_real_signals(settings=settings, sources=sources, store=store)
+        run = run_real_signals(
+            settings=settings,
+            sources=sources,
+            store=store,
+            audit_store=audit_store,
+            audit_mode="persist" if args.persist else "dry_run",
+            audit_initiated_by="manual_cli",
+        )
     except (ValueError, RuntimeError) as exc:
         print(f"erro: {type(exc).__name__}")
         return 1

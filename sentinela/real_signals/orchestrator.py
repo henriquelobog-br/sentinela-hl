@@ -6,7 +6,7 @@ import hashlib
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Literal
 from uuid import uuid4
 
 import httpx
@@ -20,8 +20,24 @@ from sentinela.interest import (
     load_research_profile,
 )
 from sentinela.persistence import (
-    EventStore, EventStoreResult, ResearcherSignalStore, ResearcherSignalStoreResult,
-    is_signal_eligible_for_persistence,
+    CanonicalProvenanceStore, CanonicalProvenanceStoreError, CollectorRunAudit,
+    EventStore, EventStoreResult,
+    PipelineRunAuditFinal,
+    PipelineRunAuditStart, PipelineRunAuditStore, PipelineRunAuditStoreError,
+    ResearcherSignalStore, ResearcherSignalStoreResult,
+    is_signal_eligible_for_persistence, safe_error_type, sanitize_audit_error,
+)
+from sentinela.canonical_provenance import (
+    CanonicalEventAcceptance,
+    CanonicalEventCandidate,
+    CollectorRole,
+    accept_canonical_events,
+    build_canonical_signal_record,
+)
+from sentinela.canonical_provenance.models import (
+    CanonicalEventPersistenceResult,
+    CanonicalSignalPersistenceResult,
+    RunManifestFinal,
 )
 from sentinela.prioritized_bulletin.engine import _event_dedup_key
 from sentinela.prioritized_bulletin import (
@@ -96,6 +112,9 @@ class RealSignalRun:
     result: RunResult
     persistence: ResearcherSignalStoreResult | None = None
     event_persistence: EventStoreResult | None = None
+    canonical_event_persistence: CanonicalEventPersistenceResult | None = None
+    canonical_signal_persistence: CanonicalSignalPersistenceResult | None = None
+    canonical_event_acceptance: CanonicalEventAcceptance | None = None
     unmatched_terms: tuple[str, ...] = ()
     eligible_signal_ids: tuple[str, ...] = ()
 
@@ -110,6 +129,42 @@ class RealSignalRun:
     @property
     def duplicates(self) -> int:
         return sum(item.duplicates for item in self.collections)
+
+
+@dataclass
+class _AuditProgress:
+    stage: str = "initialization"
+    consulted_sources: tuple[str, ...] = ()
+    successful_sources: tuple[str, ...] = ()
+    failed_sources: tuple[str, ...] = ()
+    records_received: int = 0
+    candidates_generated: int = 0
+    signals_generated: int = 0
+    signals_eligible: int = 0
+    signals_persisted: int = 0
+    canonical_events_accepted: int = 0
+    canonical_events_rejected: int = 0
+    canonical_signals_persisted: int = 0
+
+
+_COLLECTOR_AREAS: dict[str, tuple[str, ...]] = {
+    "cams": ("atmospheric_science",),
+    "cmr": ("atmospheric_science",),
+    "merra2": ("atmospheric_science",),
+    "usgs": ("seismology",),
+    "openmeteo-weather": ("climate_science",),
+    "openmeteo-marine": ("oceanography",),
+    "openmeteo-climate": ("climate_science",),
+    "nws-alerts": ("climate_science",),
+    "noaa-coops": ("oceanography",),
+    "noaa-ndbc": ("oceanography",),
+    "donki": ("space_weather",),
+    "usgs-volcano": ("volcanology",),
+    "gvp": ("volcanology",),
+    "gdelt": ("scientific_geopolitics",),
+    "acled": ("scientific_geopolitics",),
+    "firms": ("environmental_monitoring", "volcanology"),
+}
 
 
 def _configs(taxonomy_version: str):
@@ -254,10 +309,165 @@ def _pipeline(events: tuple[Any, ...], settings: RealSignalSettings) -> tuple[tu
     return signals, unmatched_terms
 
 
-def run_real_signals(*, settings: RealSignalSettings, sources: Iterable[str] = ("cams", "cmr", "merra2"), now: datetime | None = None, collectors: dict[str, Any] | None = None, event_store: EventStore | None = None, store: ResearcherSignalStore | None = None) -> RealSignalRun:
+def run_real_signals(
+    *,
+    settings: RealSignalSettings,
+    sources: Iterable[str] = ("cams", "cmr", "merra2"),
+    now: datetime | None = None,
+    collectors: dict[str, Any] | None = None,
+    event_store: EventStore | None = None,
+    store: ResearcherSignalStore | None = None,
+    audit_store: PipelineRunAuditStore | None = None,
+    canonical_store: CanonicalProvenanceStore | None = None,
+    audit_mode: Literal["dry_run", "persist"] | None = None,
+    audit_initiated_by: str = "python_api",
+) -> RealSignalRun:
     started_at = datetime.now(timezone.utc)
     current = (now or started_at).astimezone(timezone.utc)
     requested_sources = tuple(dict.fromkeys(sources))
+    run_id = str(uuid4())
+    mode = audit_mode or (
+        "persist" if store is not None or canonical_store is not None else "dry_run"
+    )
+    progress = _AuditProgress()
+
+    if canonical_store is not None and audit_store is None:
+        raise ValueError("canonical persistence requires PipelineRunAuditStore")
+    if canonical_store is not None and (event_store is not None or store is not None):
+        raise ValueError(
+            "canonical persistence cannot be combined with legacy scientific stores"
+        )
+    if canonical_store is not None and mode != "persist":
+        raise ValueError("canonical persistence requires persist audit mode")
+
+    if audit_store is not None:
+        audit_store.create_run(
+            PipelineRunAuditStart(
+                run_id=run_id,
+                initiated_by=audit_initiated_by,
+                mode=mode,
+                started_at=started_at,
+                requested_sources=requested_sources,
+            )
+        )
+
+    try:
+        run = _execute_real_signals(
+            settings=settings,
+            collectors=collectors,
+            event_store=event_store,
+            store=store,
+            audit_store=audit_store,
+            canonical_store=canonical_store,
+            started_at=started_at,
+            current=current,
+            requested_sources=requested_sources,
+            run_id=run_id,
+            progress=progress,
+        )
+    except Exception as exc:
+        if canonical_store is not None:
+            try:
+                canonical_store.finalize_manifest(
+                    RunManifestFinal(
+                        run_id=run_id,
+                        stage="failed",
+                        accepted_events=progress.canonical_events_accepted,
+                        rejected_events=progress.canonical_events_rejected,
+                        persisted_signals=progress.canonical_signals_persisted,
+                        versions={"canonical_provenance": "v1"},
+                        commit_ambiguous=(
+                            isinstance(exc, CanonicalProvenanceStoreError)
+                            and exc.commit_ambiguous
+                        ),
+                        error_type=type(exc).__name__,
+                        error_message="canonical pipeline execution failed",
+                    )
+                )
+            except Exception:
+                pass
+        if audit_store is not None:
+            completed_at = datetime.now(timezone.utc)
+            failed = PipelineRunAuditFinal(
+                run_id=run_id,
+                status="failed",
+                started_at=started_at,
+                completed_at=completed_at,
+                requested_sources=requested_sources,
+                consulted_sources=progress.consulted_sources,
+                successful_sources=progress.successful_sources,
+                failed_sources=progress.failed_sources,
+                records_received=progress.records_received,
+                candidates_generated=progress.candidates_generated,
+                signals_generated=progress.signals_generated,
+                signals_eligible=progress.signals_eligible,
+                signals_persisted=progress.signals_persisted,
+                error_stage=progress.stage,
+                error_type=safe_error_type(exc),
+                error_message=(
+                    "audit operation failed"
+                    if isinstance(exc, PipelineRunAuditStoreError)
+                    else "pipeline execution failed"
+                ),
+            )
+            try:
+                audit_store.finalize_run(failed)
+            except Exception:
+                # The original scientific/operational exception remains primary.
+                pass
+        raise
+
+    if audit_store is not None:
+        status = {
+            "complete": "succeeded",
+            "partial": "partial",
+            "failed": "failed",
+        }[run.result.status]
+        audit_store.finalize_run(
+            PipelineRunAuditFinal(
+                run_id=run.result.run_id,
+                status=status,
+                started_at=run.result.started_at,
+                completed_at=run.result.completed_at,
+                requested_sources=run.result.requested_sources,
+                consulted_sources=run.result.consulted_sources,
+                successful_sources=run.result.successful_sources,
+                failed_sources=run.result.failed_sources,
+                records_received=run.result.records_received,
+                candidates_generated=run.result.events_produced,
+                signals_generated=run.result.signals_produced,
+                signals_eligible=run.result.signals_eligible,
+                signals_persisted=run.result.signals_persisted,
+            )
+        )
+    if canonical_store is not None:
+        canonical_store.finalize_manifest(
+            RunManifestFinal(
+                run_id=run.result.run_id,
+                stage="finalized",
+                accepted_events=progress.canonical_events_accepted,
+                rejected_events=progress.canonical_events_rejected,
+                persisted_signals=progress.canonical_signals_persisted,
+                versions={"canonical_provenance": "v1"},
+            )
+        )
+    return run
+
+
+def _execute_real_signals(
+    *,
+    settings: RealSignalSettings,
+    collectors: dict[str, Any] | None,
+    event_store: EventStore | None,
+    store: ResearcherSignalStore | None,
+    audit_store: PipelineRunAuditStore | None,
+    canonical_store: CanonicalProvenanceStore | None,
+    started_at: datetime,
+    current: datetime,
+    requested_sources: tuple[str, ...],
+    run_id: str,
+    progress: _AuditProgress,
+) -> RealSignalRun:
     configured = collectors or {
         "cams": CamsCollector(settings),
         "cmr": CmrCollector(settings),
@@ -284,14 +494,78 @@ def run_real_signals(*, settings: RealSignalSettings, sources: Iterable[str] = (
 
     def collect(source: str, *, supporting: bool = False) -> CollectionResult:
         consulted_sources.append(source)
+        progress.consulted_sources = tuple(consulted_sources)
         if supporting:
             supporting_sources.append(source)
+        collector_started_at = datetime.now(timezone.utc)
+        role = "supporting" if supporting else "requested"
+        progress.stage = "audit_collector_start"
+        if audit_store is not None:
+            audit_store.record_collector(
+                CollectorRunAudit(
+                    run_id=run_id,
+                    collector=source,
+                    collector_role=role,
+                    scientific_areas=_COLLECTOR_AREAS.get(source, ()),
+                    status="running",
+                    started_at=collector_started_at,
+                )
+            )
+        progress.stage = "collection"
+        raised_error: Exception | None = None
         try:
             result = configured[source].collect(current)
         except Exception as exc:
+            raised_error = exc
             result = CollectionResult(source=source, error=type(exc).__name__)
+        collector_completed_at = datetime.now(timezone.utc)
+        areas = tuple(
+            dict.fromkeys(
+                event.scientific_area
+                for event in result.events
+                if event.scientific_area
+            )
+        ) or _COLLECTOR_AREAS.get(source, ())
+        progress.stage = "audit_collector_finish"
+        if audit_store is not None:
+            audit_store.record_collector(
+                CollectorRunAudit(
+                    run_id=run_id,
+                    collector=source,
+                    collector_role=role,
+                    scientific_areas=areas,
+                    status="failed" if result.error is not None else "succeeded",
+                    started_at=collector_started_at,
+                    completed_at=collector_completed_at,
+                    records_received=result.received,
+                    candidates_generated=len(result.events),
+                    signals_generated=None,
+                    error_type=(
+                        safe_error_type(raised_error)
+                        if raised_error is not None
+                        else "CollectorReportedError" if result.error else None
+                    ),
+                    error_message=(
+                        "collector execution failed"
+                        if raised_error is not None
+                        else sanitize_audit_error(result.error)
+                    ),
+                )
+            )
         source_outcomes[source] = result
         results.append(result)
+        progress.successful_sources = tuple(
+            item for item in consulted_sources
+            if source_outcomes.get(item) is not None
+            and source_outcomes[item].error is None
+        )
+        progress.failed_sources = tuple(
+            item for item in consulted_sources
+            if source_outcomes.get(item) is not None
+            and source_outcomes[item].error is not None
+        )
+        if not supporting:
+            progress.records_received += result.received
         return result
 
     for source in requested_sources:
@@ -360,11 +634,75 @@ def run_real_signals(*, settings: RealSignalSettings, sources: Iterable[str] = (
     if duplicate_count:
         results.append(CollectionResult(source="batch", duplicates=duplicate_count))
     events = tuple(sorted(unique.values(), key=lambda event: (event.occurred_at or current, str(event.id))))
+    canonical_acceptance = None
+    canonical_event_persistence = None
+    if canonical_store is not None:
+        candidates = tuple(
+            CanonicalEventCandidate(
+                event=event,
+                collector=source,
+                collector_role=CollectorRole.REQUESTED,
+            )
+            for source, result in requested_results.items()
+            for event in result.events
+        )
+        progress.stage = "canonical_acceptance"
+        canonical_acceptance = accept_canonical_events(candidates)
+        events = tuple(item.event for item in canonical_acceptance.accepted)
+        progress.canonical_events_accepted = len(canonical_acceptance.accepted)
+        progress.canonical_events_rejected = len(canonical_acceptance.rejected)
+        progress.stage = "canonical_event_persistence"
+        canonical_event_persistence = canonical_store.persist_events(
+            run_id, canonical_acceptance
+        )
+    progress.candidates_generated = len(events)
+    progress.stage = "event_persistence"
     event_persistence = event_store.upsert_many(events) if event_store is not None else None
+    progress.stage = "scientific_pipeline"
     signals, unmatched_terms, eligible_signal_ids = _pipeline_with_eligibility(events, settings)
+    progress.signals_generated = len(signals)
+    progress.signals_eligible = len(eligible_signal_ids)
     eligible_id_set = set(eligible_signal_ids)
     eligible_signals = tuple(signal for signal in signals if signal.id in eligible_id_set)
+    canonical_signal_persistence = None
+    if canonical_store is not None:
+        accepted_event_ids = frozenset(str(event.id) for event in events)
+        grouped_event_ids: dict[tuple[Any, ...], tuple[str, ...]] = {}
+        for event in events:
+            key = _event_dedup_key(event)
+            grouped_event_ids[key] = tuple(
+                str(member.id)
+                for member in events
+                if _event_dedup_key(member) == key
+            )
+        canonical_signal_records = []
+        event_by_id = {str(event.id): event for event in events}
+        for signal in eligible_signals:
+            representative_event = event_by_id[signal.representative_event_id]
+            members = grouped_event_ids[_event_dedup_key(representative_event)]
+            canonical_signal_records.append(
+                build_canonical_signal_record(
+                    signal,
+                    representative_event_id=signal.representative_event_id,
+                    contributor_event_ids=tuple(
+                        item for item in members
+                        if item != signal.representative_event_id
+                    ),
+                    accepted_event_ids=accepted_event_ids,
+                )
+            )
+        progress.stage = "canonical_signal_persistence"
+        canonical_signal_persistence = canonical_store.persist_signals(
+            run_id, tuple(canonical_signal_records)
+        )
+        progress.canonical_signals_persisted = canonical_signal_persistence.persisted
+    progress.stage = "signal_persistence"
     persistence = store.upsert_many(eligible_signals) if store is not None else None
+    progress.signals_persisted = (
+        persistence.persisted if persistence is not None
+        else canonical_signal_persistence.persisted
+        if canonical_signal_persistence is not None else 0
+    )
     completed_at = datetime.now(timezone.utc)
     successful_sources = tuple(
         source for source in consulted_sources
@@ -375,7 +713,7 @@ def run_real_signals(*, settings: RealSignalSettings, sources: Iterable[str] = (
         if source_outcomes[source].error is not None
     )
     result = RunResult(
-        run_id=str(uuid4()),
+        run_id=run_id,
         started_at=started_at,
         completed_at=completed_at,
         requested_sources=requested_sources,
@@ -387,11 +725,15 @@ def run_real_signals(*, settings: RealSignalSettings, sources: Iterable[str] = (
         events_produced=len(events),
         signals_produced=len(signals),
         signals_eligible=len(eligible_signal_ids),
-        signals_persisted=persistence.persisted if persistence else 0,
+        signals_persisted=progress.signals_persisted,
     )
+    progress.stage = "completed"
     return RealSignalRun(
         collections=tuple(results), events=events, signals=signals,
         result=result, persistence=persistence, event_persistence=event_persistence,
+        canonical_event_persistence=canonical_event_persistence,
+        canonical_signal_persistence=canonical_signal_persistence,
+        canonical_event_acceptance=canonical_acceptance,
         unmatched_terms=unmatched_terms,
         eligible_signal_ids=eligible_signal_ids,
     )
