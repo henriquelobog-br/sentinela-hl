@@ -149,12 +149,16 @@ def test_research_package_file_allowlist():
         "identity.py",
         "models.py",
         "openalex.py",
+        "openalex_http.py",
+        "persistence.py",
         "relevance.py",
         "tests/__init__.py",
         "tests/conftest.py",
         "tests/test_identity.py",
         "tests/test_models.py",
         "tests/test_openalex.py",
+        "tests/test_openalex_http.py",
+        "tests/test_persistence.py",
         "tests/test_relevance.py",
     ]
 
