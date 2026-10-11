@@ -1,0 +1,4 @@
+**
+!docker/
+!docker/operational/
+!docker/operational/sentinela-trigger.mjs

@@ -1,0 +1,58 @@
+{
+  "name": "Sentinela Operational - Coastal Forecast",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "25 */3 * * *"
+            }
+          ]
+        }
+      },
+      "id": "3312563e-63ba-5143-9452-07a655a415e4",
+      "name": "Schedule UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "executeOnce": true,
+        "command": "sentinela-trigger coastal_forecast"
+      },
+      "id": "6ba1815e-180a-508e-98da-942eb4494c95",
+      "name": "Run Sentinela Tier",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        40,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule UTC": {
+      "main": [
+        [
+          {
+            "node": "Run Sentinela Tier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}

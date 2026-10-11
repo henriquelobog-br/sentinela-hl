@@ -1,0 +1,27 @@
+services:
+  n8n:
+    build:
+      context: .
+      dockerfile: docker/operational/Dockerfile.n8n
+    image: sentinela-n8n-operational:o4-c2g
+    environment:
+      NODES_EXCLUDE: '["n8n-nodes-base.localFileTrigger"]'
+    group_add:
+      - "2000"
+    volumes:
+      - sentinela_operational_ipc:/run/sentinela
+
+  sentinela-operational-runner:
+    build:
+      context: .
+      dockerfile: docker/operational/Dockerfile.runner
+    image: sentinela-operational-runner:o4-c2g
+    init: true
+    restart: unless-stopped
+    volumes:
+      - sentinela_operational_ipc:/run/sentinela
+      - ${SENTINELA_OPERATIONAL_ENV_FILE:?SENTINELA_OPERATIONAL_ENV_FILE required}:/run/secrets-source/sentinela_env:ro
+
+volumes:
+  sentinela_operational_ipc:
+    name: sentinela_operational_ipc

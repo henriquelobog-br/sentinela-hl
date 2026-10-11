@@ -1,0 +1,10 @@
+# syntax=docker/dockerfile:1
+FROM n8nio/n8n@sha256:4b0b4a48faeaa5e17ea57a578a53078fb6c9b8eb65d1573eb68d8ce8f6022da0
+
+USER root
+
+COPY --chmod=0755 \
+  docker/operational/sentinela-trigger.mjs \
+  /usr/local/bin/sentinela-trigger
+
+USER node

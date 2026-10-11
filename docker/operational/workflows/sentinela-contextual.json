@@ -1,0 +1,58 @@
+{
+  "name": "Sentinela Operational - Contextual",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "25 1 * * *"
+            }
+          ]
+        }
+      },
+      "id": "88dadce1-12c6-5d39-a6b7-edaa143eadd0",
+      "name": "Schedule UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "executeOnce": true,
+        "command": "sentinela-trigger contextual"
+      },
+      "id": "6c033d48-8584-523d-8256-6b50182722d3",
+      "name": "Run Sentinela Tier",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        40,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule UTC": {
+      "main": [
+        [
+          {
+            "node": "Run Sentinela Tier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}

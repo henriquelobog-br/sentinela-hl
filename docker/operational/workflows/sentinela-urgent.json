@@ -1,0 +1,58 @@
+{
+  "name": "Sentinela Operational - Urgent",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "5 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "171ab088-2bd0-5c3e-8a1c-e0ae9f2c70b4",
+      "name": "Schedule UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "executeOnce": true,
+        "command": "sentinela-trigger urgent"
+      },
+      "id": "b6829ff4-8af1-5c70-b6ea-07cbea28bbc4",
+      "name": "Run Sentinela Tier",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        40,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule UTC": {
+      "main": [
+        [
+          {
+            "node": "Run Sentinela Tier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}

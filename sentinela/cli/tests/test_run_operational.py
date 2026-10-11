@@ -144,3 +144,68 @@ def test_main_without_execute_is_non_mutating(
 
     assert "O4C_OPERATIONAL_EXECUTION_GATE=HOLD" in output
     assert "O4C_OPERATIONAL_RUN_EXECUTED=NO" in output
+
+
+def test_scheduler_source_parser_contract():
+    import argparse
+
+    import pytest
+
+    from sentinela.cli import run_operational as operational
+
+    assert operational._parse_sources(
+        "gdelt,usgs"
+    ) == ("gdelt", "usgs")
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        operational._parse_sources("")
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        operational._parse_sources("gdelt,not-a-source")
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        operational._parse_sources("gdelt,gdelt")
+
+
+def test_scheduler_cli_contract():
+    from sentinela.cli import run_operational as operational
+
+    args = operational._parser().parse_args(
+        [
+            "--execute",
+            "--sources",
+            "gdelt,usgs",
+            "--job-timeout-seconds",
+            "17",
+        ]
+    )
+
+    assert args.execute is True
+    assert args.sources == ("gdelt", "usgs")
+    assert args.job_timeout_seconds == 17
+
+    defaults = operational._parser().parse_args([])
+
+    assert defaults.sources == operational.ACTIVATION_SOURCES
+    assert (
+        defaults.job_timeout_seconds
+        == operational.DEFAULT_JOB_TIMEOUT_SECONDS
+        == 900
+    )
+
+
+def test_job_timeout_is_operational_error():
+    import time
+
+    import pytest
+
+    from sentinela.cli import run_operational as operational
+
+    assert issubclass(
+        operational.OperationalJobTimeout,
+        operational.OperationalRunnerError,
+    )
+
+    with pytest.raises(operational.OperationalJobTimeout):
+        with operational._job_timeout(1):
+            time.sleep(2)

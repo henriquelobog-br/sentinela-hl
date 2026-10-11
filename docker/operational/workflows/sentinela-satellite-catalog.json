@@ -1,0 +1,58 @@
+{
+  "name": "Sentinela Operational - Satellite Catalog",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "45 */6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "de2a629e-a569-5178-91b8-13b100c5d8af",
+      "name": "Schedule UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "executeOnce": true,
+        "command": "sentinela-trigger satellite_catalog"
+      },
+      "id": "faaa41f0-59b6-5e12-805d-9abfc9d7f48d",
+      "name": "Run Sentinela Tier",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        40,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule UTC": {
+      "main": [
+        [
+          {
+            "node": "Run Sentinela Tier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC"
+  },
+  "pinData": {}
+}

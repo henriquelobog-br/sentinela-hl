@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import fcntl
 import os
+import signal
 import stat
 import sys
 from contextlib import contextmanager
@@ -187,10 +188,104 @@ def _exclusive_local_lock(path: Path) -> Iterator[None]:
         os.close(fd)
 
 
+DEFAULT_JOB_TIMEOUT_SECONDS = 900
+
+
+class OperationalJobTimeout(OperationalRunnerError):
+    """Raised when the bounded operational job runtime is exceeded."""
+
+
+def _validate_sources(sources: tuple[str, ...]) -> tuple[str, ...]:
+    if not sources:
+        raise ValueError("operational source set must not be empty")
+
+    unknown = tuple(
+        source
+        for source in sources
+        if source not in ACTIVATION_SOURCES
+    )
+
+    if unknown:
+        raise ValueError(
+            "unknown operational source(s): "
+            + ",".join(unknown)
+        )
+
+    if len(set(sources)) != len(sources):
+        raise ValueError("operational source set contains duplicates")
+
+    return sources
+
+
+def _parse_sources(value: str) -> tuple[str, ...]:
+    sources = tuple(
+        part.strip()
+        for part in value.split(",")
+        if part.strip()
+    )
+
+    try:
+        return _validate_sources(sources)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from exc
+
+
+def _positive_job_timeout_seconds(value: str) -> int:
+    try:
+        seconds = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            "job timeout must be an integer"
+        ) from exc
+
+    if seconds <= 0:
+        raise argparse.ArgumentTypeError(
+            "job timeout must be greater than zero"
+        )
+
+    return seconds
+
+
+@contextmanager
+def _job_timeout(seconds: int):
+    if seconds <= 0:
+        raise ValueError(
+            "job timeout must be greater than zero"
+        )
+
+    previous_delay, previous_interval = signal.getitimer(
+        signal.ITIMER_REAL
+    )
+
+    if previous_delay or previous_interval:
+        raise OperationalRunnerError(
+            "ITIMER_REAL is already active; "
+            "refusing to replace an existing timer"
+        )
+
+    previous_handler = signal.getsignal(signal.SIGALRM)
+
+    def _raise_timeout(_signum, _frame):
+        raise OperationalJobTimeout(
+            f"operational job exceeded {seconds}s timeout"
+        )
+
+    signal.signal(signal.SIGALRM, _raise_timeout)
+    signal.setitimer(signal.ITIMER_REAL, float(seconds))
+
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0.0)
+        signal.signal(signal.SIGALRM, previous_handler)
+
+
 def run_once(
     *,
     env_file: Path = DEFAULT_ENV_FILE,
     lock_file: Path = DEFAULT_LOCK_FILE,
+    sources: tuple[str, ...] = ACTIVATION_SOURCES,
+    job_timeout_seconds: int = DEFAULT_JOB_TIMEOUT_SECONDS,
     guard: Callable[..., Any] | None = None,
     run_fn: Callable[..., RealSignalRun] = run_real_signals,
     audit_store_factory: Callable[..., Any] = (
@@ -222,16 +317,17 @@ def run_once(
                 timeout=settings.timeout_seconds,
             )
 
-            return run_fn(
-                settings=settings,
-                sources=ACTIVATION_SOURCES,
-                event_store=None,
-                store=None,
-                audit_store=audit_store,
-                canonical_store=canonical_store,
-                audit_mode="persist",
-                audit_initiated_by=INITIATED_BY,
-            )
+            with _job_timeout(job_timeout_seconds):
+                return run_fn(
+                    settings=settings,
+                    sources=_validate_sources(sources),
+                    event_store=None,
+                    store=None,
+                    audit_store=audit_store,
+                    canonical_store=canonical_store,
+                    audit_mode="persist",
+                    audit_initiated_by=INITIATED_BY,
+                )
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -253,6 +349,21 @@ def _parser() -> argparse.ArgumentParser:
         type=Path,
         default=DEFAULT_LOCK_FILE,
     )
+    parser.add_argument(
+        "--sources",
+        type=_parse_sources,
+        default=ACTIVATION_SOURCES,
+        help=(
+            "comma-separated operational source allowlist; "
+            "defaults to all activation sources"
+        ),
+    )
+    parser.add_argument(
+        "--job-timeout-seconds",
+        type=_positive_job_timeout_seconds,
+        default=DEFAULT_JOB_TIMEOUT_SECONDS,
+        help="bounded operational job runtime in seconds",
+    )
     return parser
 
 
@@ -268,6 +379,8 @@ def main(argv: list[str] | None = None) -> int:
         run = run_once(
             env_file=args.env_file,
             lock_file=args.lock_file,
+            sources=args.sources,
+            job_timeout_seconds=args.job_timeout_seconds,
         )
     except OperationalLeaseHeld:
         print("O4C_REMOTE_CONCURRENCY_GUARD=HELD")
