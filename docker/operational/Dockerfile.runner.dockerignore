@@ -3,3 +3,7 @@
 !uv.lock
 !sentinela/
 !sentinela/**
+!taxonomy/
+!taxonomy/**
+!profiles/
+!profiles/**

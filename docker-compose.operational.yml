@@ -15,7 +15,7 @@ services:
     build:
       context: .
       dockerfile: docker/operational/Dockerfile.runner
-    image: sentinela-operational-runner:o4-c2g
+    image: sentinela-operational-runner:o4-d1
     init: true
     restart: unless-stopped
     volumes:
