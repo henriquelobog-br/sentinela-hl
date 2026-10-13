@@ -120,3 +120,19 @@ def test_store_persists_batch_through_rpc(sarangani_event):
     assert url.endswith("/rest/v1/rpc/persist_seismic_editorial_batch")
     assert kwargs["json"]["p_records"][0]["event_id"] == str(sarangani_event.id)
     assert "authorization" not in kwargs["headers"]
+
+
+def test_store_lists_pending_events_without_offset(sarangani_event):
+    client = _Client([sarangani_event.model_dump(mode="json")])
+    store = SupabaseSeismicEditorialStore(
+        url="https://example.supabase.co",
+        service_key="sb_secret_test",
+        client=client,
+    )
+
+    events = store.list_events(limit=17)
+
+    assert events == (sarangani_event,)
+    url, kwargs = client.calls[0]
+    assert url.endswith("/rest/v1/rpc/list_seismic_editorial_events")
+    assert kwargs["json"] == {"p_limit": 17}

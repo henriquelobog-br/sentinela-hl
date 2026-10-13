@@ -145,9 +145,10 @@ from public, anon, authenticated;
 grant execute on function public.persist_seismic_editorial_batch(jsonb)
 to service_role;
 
+drop function if exists public.list_seismic_editorial_events(integer, integer);
+
 create or replace function public.list_seismic_editorial_events(
-    p_limit integer default 250,
-    p_offset integer default 0
+    p_limit integer default 250
 )
 returns table (
     id uuid,
@@ -179,10 +180,8 @@ set search_path = pg_catalog, pg_temp
 as $$
 begin
     if p_limit is null or p_limit < 1 or p_limit > 1000 then
-        raise exception 'p_limit must be between 1 and 1000' using errcode = '22023';
-    end if;
-    if p_offset is null or p_offset < 0 then
-        raise exception 'p_offset must be non-negative' using errcode = '22023';
+        raise exception 'p_limit must be between 1 and 1000'
+            using errcode = '22023';
     end if;
 
     return query
@@ -212,18 +211,22 @@ begin
     where e.source = 'USGS'
       and e.category = 'earthquake_detected'
       and e.scientific_area = 'seismology'
+      and not exists (
+          select 1
+          from editorial.seismic_contents as esc
+          where esc.event_id = e.id
+            and esc.editorial_version = 'seismic-v1'
+            and esc.locale = 'pt-BR'
+      )
     order by e.occurred_at desc nulls last, e.id
-    limit p_limit
-    offset p_offset;
+    limit p_limit;
 end;
 $$;
 
-revoke all on function public.list_seismic_editorial_events(integer, integer)
+revoke all on function public.list_seismic_editorial_events(integer)
 from public, anon, authenticated;
-grant execute on function public.list_seismic_editorial_events(integer, integer)
+grant execute on function public.list_seismic_editorial_events(integer)
 to service_role;
 
-comment on function public.persist_seismic_editorial_batch(jsonb) is
-    'Service-role-only idempotent persistence boundary for Seismic Editorial v1.';
-comment on function public.list_seismic_editorial_events(integer, integer) is
-    'Service-role-only paged reader used solely by explicit Seismic Editorial backfill.';
+comment on function public.list_seismic_editorial_events(integer) is
+    'Service-role-only pending reader used solely by explicit Seismic Editorial backfill.';

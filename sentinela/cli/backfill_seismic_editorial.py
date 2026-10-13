@@ -136,10 +136,9 @@ def run_backfill(
                 service_key=values["SENTINELA_SUPABASE_SERVICE_KEY"],
                 timeout=timeout,
             )
-            offset = 0
             with _job_timeout(job_timeout_seconds):
                 while True:
-                    events = store.list_events(limit=page_size, offset=offset)
+                    events = store.list_events(limit=page_size)
                     if not events:
                         break
                     batch = generate_and_persist(
@@ -148,7 +147,6 @@ def run_backfill(
                         generated_at=generated_at,
                     )
                     total = total.plus(batch)
-                    offset += len(events)
                     if len(events) < page_size:
                         break
 

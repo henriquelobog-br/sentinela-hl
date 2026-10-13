@@ -15,3 +15,8 @@ def test_seismic_editorial_operational_rpc_security_contract():
     assert normalized.count("to service_role") == 2
     assert normalized.count("from public, anon, authenticated") == 2
     assert "grant execute" in normalized
+    assert "and not exists (" in normalized
+    assert "esc.editorial_version = 'seismic-v1'" in normalized
+    assert "esc.locale = 'pt-br'" in normalized
+    assert "p_offset" not in normalized
+    assert "list_seismic_editorial_events(integer)" in normalized

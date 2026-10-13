@@ -112,18 +112,15 @@ class SupabaseSeismicEditorialStore:
         self,
         *,
         limit: int = 250,
-        offset: int = 0,
     ) -> tuple[Event, ...]:
         if not 1 <= limit <= 1000:
             raise ValueError("seismic editorial page limit must be between 1 and 1000")
-        if offset < 0:
-            raise ValueError("seismic editorial page offset must be non-negative")
 
         try:
             response = self._client.post(
                 f"{self._url}/rest/v1/rpc/list_seismic_editorial_events",
                 headers=self._headers(),
-                json={"p_limit": limit, "p_offset": offset},
+                json={"p_limit": limit},
             )
             response.raise_for_status()
             rows = response.json()
