@@ -25,6 +25,11 @@ from sentinela.persistence import (
     SupabasePipelineRunAuditStore,
 )
 from sentinela.real_signals import RealSignalRun, RealSignalSettings, run_real_signals
+from sentinela.seismic_editorial.operational import (
+    SupabaseSeismicEditorialStore,
+    generate_and_persist,
+    select_hourly_usgs_events,
+)
 
 
 ACTIVATION_SOURCES = (
@@ -294,6 +299,9 @@ def run_once(
     canonical_store_factory: Callable[..., Any] = (
         SupabaseCanonicalProvenanceStore
     ),
+    seismic_editorial_store_factory: Callable[..., Any] = (
+        SupabaseSeismicEditorialStore
+    ),
 ) -> RealSignalRun:
     values = _load_environment(env_file)
     settings = RealSignalSettings.from_env()
@@ -318,7 +326,7 @@ def run_once(
             )
 
             with _job_timeout(job_timeout_seconds):
-                return run_fn(
+                run = run_fn(
                     settings=settings,
                     sources=_validate_sources(sources),
                     event_store=None,
@@ -328,6 +336,22 @@ def run_once(
                     audit_mode="persist",
                     audit_initiated_by=INITIATED_BY,
                 )
+
+                if "usgs" in sources:
+                    seismic_events = select_hourly_usgs_events(run)
+                    if seismic_events:
+                        editorial_store = seismic_editorial_store_factory(
+                            url=values["SENTINELA_SUPABASE_URL"],
+                            service_key=values["SENTINELA_SUPABASE_SERVICE_KEY"],
+                            timeout=settings.timeout_seconds,
+                        )
+                        generate_and_persist(
+                            seismic_events,
+                            store=editorial_store,
+                            generated_at=run.result.completed_at,
+                        )
+
+                return run
 
 
 def _parser() -> argparse.ArgumentParser:
