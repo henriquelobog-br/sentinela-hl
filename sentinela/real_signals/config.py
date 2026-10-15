@@ -196,6 +196,9 @@ class RealSignalSettings:
     cmr_page_size: int
     cmr_calipso_collection_ids: tuple[str, ...]
     cmr_modis_collection_ids: tuple[str, ...]
+    cmr_viirs_snpp_collection_ids: tuple[str, ...]
+    cmr_viirs_noaa20_collection_ids: tuple[str, ...]
+    cmr_viirs_noaa21_collection_ids: tuple[str, ...]
     merra2_collection: str
     merra2_variable: str
     merra2_region_ids: tuple[str, ...]
@@ -280,9 +283,12 @@ class RealSignalSettings:
             cams_forecast_hours=tuple(int(value) for value in environ.get("SENTINELA_CAMS_FORECAST_HOURS", "0,6,12,18,24").split(",") if value.strip()),
             cams_region_ids=tuple(value.strip() for value in environ.get("SENTINELA_CAMS_REGION", "all").split(",") if value.strip()),
             cmr_api_url=environ.get("NASA_CMR_API_URL", "https://cmr.earthdata.nasa.gov/search"),
-            cmr_page_size=_int("SENTINELA_CMR_PAGE_SIZE", 20),
+            cmr_page_size=_int("SENTINELA_CMR_PAGE_SIZE", 200),
             cmr_calipso_collection_ids=tuple(filter(None, environ.get("SENTINELA_CMR_CALIPSO_COLLECTION_IDS", "C3551627908-LARC_CLOUD").split(","))),
             cmr_modis_collection_ids=tuple(filter(None, environ.get("SENTINELA_CMR_MODIS_COLLECTION_IDS", "C1443533440-LAADS").split(","))),
+            cmr_viirs_snpp_collection_ids=tuple(filter(None, environ.get("SENTINELA_CMR_VIIRS_SNPP_COLLECTION_IDS", "C4217896394-LAADS").split(","))),
+            cmr_viirs_noaa20_collection_ids=tuple(filter(None, environ.get("SENTINELA_CMR_VIIRS_NOAA20_COLLECTION_IDS", "C4218100848-LAADS").split(","))),
+            cmr_viirs_noaa21_collection_ids=tuple(filter(None, environ.get("SENTINELA_CMR_VIIRS_NOAA21_COLLECTION_IDS", "C4218210959-LAADS").split(","))),
             merra2_collection=environ.get("SENTINELA_MERRA2_COLLECTION", "C1276812830-GES_DISC"),
             merra2_variable=environ.get("SENTINELA_MERRA2_VARIABLE", "DUEXTTAU"),
             merra2_region_ids=tuple(value.strip() for value in environ.get("SENTINELA_MERRA2_REGION", "all").split(",") if value.strip()),

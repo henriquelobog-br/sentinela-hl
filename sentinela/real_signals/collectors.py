@@ -111,7 +111,7 @@ def _event(
         scientific_area=scientific_area,
         entities=entities,
         keywords=keywords,
-        evidence=[{"text": evidence_text or ("mineral_dust" if event_type not in {"new_calipso_granule", "new_modis_aerosol_granule"} else "satellite_observation"), "canonical_group_id": str(canonical_group_id), **evidence}],
+        evidence=[{"text": evidence_text or ("mineral_dust" if event_type not in {"new_calipso_granule", "new_modis_aerosol_granule", "new_viirs_aerosol_granule"} else "satellite_observation"), "canonical_group_id": str(canonical_group_id), **evidence}],
         occurred_at=occurred_at,
         validated_at=occurred_at,
     )
@@ -315,6 +315,8 @@ class CamsCollector:
 
 
 class CmrCollector:
+    MAX_PAGES_PER_COLLECTION = 10
+
     def __init__(self, settings: RealSignalSettings, client: Any | None = None, processed_ids: Iterable[str] = ()):
         self.settings = settings
         self.client = client or httpx.Client(timeout=settings.timeout_seconds)
@@ -323,46 +325,77 @@ class CmrCollector:
     def collect(self, now: datetime) -> CollectionResult:
         start, end = _window(now, self.settings.window_hours)
         received = discarded = duplicates = 0
-        collections = (("calipso", self.settings.cmr_calipso_collection_ids), ("modis", self.settings.cmr_modis_collection_ids))
+        collections = (
+            ("calipso", "CALIPSO", self.settings.cmr_calipso_collection_ids),
+            ("modis", "MODIS", self.settings.cmr_modis_collection_ids),
+            ("viirs", "SNPP", self.settings.cmr_viirs_snpp_collection_ids),
+            ("viirs", "NOAA-20", self.settings.cmr_viirs_noaa20_collection_ids),
+            ("viirs", "NOAA-21", self.settings.cmr_viirs_noaa21_collection_ids),
+        )
         bbox = (-55, -40, 22, 5)
         granules: dict[tuple[str, str, str], dict[str, Any]] = {}
-        for kind, ids in collections:
+        viirs_received = {"SNPP": 0, "NOAA-20": 0, "NOAA-21": 0}
+        viirs_consulted: list[str] = []
+        pagination_limited: list[str] = []
+        for kind, platform, ids in collections:
             for collection_id in ids:
-                response = self.client.get(
-                    f"{self.settings.cmr_api_url.rstrip('/')}/granules.json",
-                    params={"collection_concept_id": collection_id, "updated_since": start.isoformat(), "bounding_box": ",".join(str(v) for v in bbox), "page_size": self.settings.cmr_page_size, "sort_key": "-revision_date"},
-                    headers={"client-id": "sentinela-hl"},
-                )
-                response.raise_for_status()
-                rows = response.json().get("feed", {}).get("entry", [])
-                received += len(rows)
-                for row in rows:
-                    granule_id = str(row.get("id") or row.get("producer_granule_id") or row.get("title"))
-                    granule_ur = str(row.get("producer_granule_id") or row.get("title") or granule_id)
-                    revision = str(row.get("updated") or row.get("revision_date") or row.get("time_start"))
-                    identity = f"{collection_id}|{granule_id}|{revision}"
-                    if identity in self.processed_ids:
-                        duplicates += 1
-                        continue
-                    occurred = _dt(row.get("time_start") or row.get("updated"))
-                    region = str(row.get("region") or "south_atlantic")
-                    key = (collection_id, region, granule_id)
-                    current = granules.get(key)
-                    if current is not None:
-                        duplicates += 1
-                        if _dt(current["revision"]) >= _dt(revision):
+                if kind == "viirs" and platform not in viirs_consulted:
+                    viirs_consulted.append(platform)
+                search_after = None
+                for page in range(self.MAX_PAGES_PER_COLLECTION):
+                    headers = {"client-id": "sentinela-hl"}
+                    if search_after:
+                        headers["CMR-Search-After"] = search_after
+                    response = self.client.get(
+                        f"{self.settings.cmr_api_url.rstrip('/')}/granules.json",
+                        params={
+                            "collection_concept_id": collection_id,
+                            "temporal": f"{start.isoformat()},{end.isoformat()}",
+                            "bounding_box": ",".join(str(v) for v in bbox),
+                            "page_size": self.settings.cmr_page_size,
+                            "sort_key[]": "-start_date",
+                        },
+                        headers=headers,
+                    )
+                    response.raise_for_status()
+                    rows = response.json().get("feed", {}).get("entry", [])
+                    received += len(rows)
+                    if kind == "viirs":
+                        viirs_received[platform] += len(rows)
+                    for row in rows:
+                        granule_id = str(row.get("id") or row.get("producer_granule_id") or row.get("title"))
+                        granule_ur = str(row.get("producer_granule_id") or row.get("title") or granule_id)
+                        revision = str(row.get("updated") or row.get("revision_date") or row.get("time_start"))
+                        identity = f"{collection_id}|{granule_id}|{revision}"
+                        if identity in self.processed_ids:
+                            duplicates += 1
                             continue
-                    granules[key] = {
-                        "kind": kind,
-                        "collection_id": collection_id,
-                        "region": region,
-                        "granule_id": granule_id,
-                        "granule_ur": granule_ur,
-                        "revision": revision,
-                        "occurred_at": occurred,
-                        "time_start": row.get("time_start"),
-                        "time_end": row.get("time_end"),
-                    }
+                        occurred = _dt(row.get("time_start") or row.get("updated"))
+                        region = str(row.get("region") or "south_atlantic")
+                        key = (collection_id, region, granule_id)
+                        current = granules.get(key)
+                        if current is not None:
+                            duplicates += 1
+                            if _dt(current["revision"]) >= _dt(revision):
+                                continue
+                        granules[key] = {
+                            "kind": kind,
+                            "platform": platform,
+                            "collection_id": collection_id,
+                            "region": region,
+                            "granule_id": granule_id,
+                            "granule_ur": granule_ur,
+                            "revision": revision,
+                            "occurred_at": occurred,
+                            "time_start": row.get("time_start"),
+                            "time_end": row.get("time_end"),
+                        }
+                    next_search_after = response.headers.get("CMR-Search-After")
+                    if not rows or not next_search_after:
+                        break
+                    search_after = next_search_after
+                else:
+                    pagination_limited.append(collection_id)
 
         grouped: dict[tuple[str, str, datetime], list[dict[str, Any]]] = {}
         for granule in granules.values():
@@ -378,15 +411,21 @@ class CmrCollector:
             earliest = members[0]["occurred_at"]
             latest = members[-1]["occurred_at"]
             kind = members[0]["kind"]
-            instrument = "CALIPSO/CALIOP" if kind == "calipso" else "MODIS"
-            event_type = "new_calipso_granule" if kind == "calipso" else "new_modis_aerosol_granule"
+            platform = members[0]["platform"]
+            instrument = {"calipso": "CALIPSO/CALIOP", "modis": "MODIS", "viirs": "VIIRS"}[kind]
+            event_type = {
+                "calipso": "new_calipso_granule",
+                "modis": "new_modis_aerosol_granule",
+                "viirs": "new_viirs_aerosol_granule",
+            }[kind]
+            product_name = f"VIIRS/{platform}" if kind == "viirs" else instrument
             count = len(members)
             noun = "produto" if count == 1 else "produtos"
             adjective = "Novo" if count == 1 else "Novos"
             availability = "disponível" if count == 1 else "disponíveis"
             region_name = "Atlântico Sul" if region == "south_atlantic" else region
             article = "o " if region == "south_atlantic" else ""
-            title = f"{adjective} {noun} {instrument} {availability} para {article}{region_name}"
+            title = f"{adjective} {noun} {product_name} {availability} para {article}{region_name}"
             reference = "desse produto" if count == 1 else "desses produtos"
             summary = (
                 f"O NASA CMR registrou {count} {noun} da coleção {collection_id} "
@@ -416,6 +455,23 @@ class CmrCollector:
                     "NASA CMR", event_type, collection_id, window_id, region
                 ))
             ))
+            event_evidence = {
+                "source": "NASA CMR",
+                "collection_concept_id": collection_id,
+                "region": region,
+                "bbox": bbox,
+                "window_start_utc": window_start.isoformat(),
+                "window_end_utc": window_end.isoformat(),
+                "earliest_occurred_at": earliest.isoformat(),
+                "latest_occurred_at": latest.isoformat(),
+                "granule_count": count,
+                "representative_event_id": representative_event_id,
+                "member_event_ids": member_event_ids,
+                "granules": granule_evidence,
+                "evidence_type": "new_products_available",
+            }
+            if kind == "viirs":
+                event_evidence.update({"instrument": instrument, "platform": platform})
             events.append(_event(
                 event_type=event_type,
                 source="NASA CMR",
@@ -426,26 +482,26 @@ class CmrCollector:
                 summary=summary,
                 occurred_at=latest,
                 group=f"cmr:{collection_id}:{region}:{window_id}",
-                evidence={
-                    "source": "NASA CMR",
-                    "collection_concept_id": collection_id,
-                    "region": region,
-                    "bbox": bbox,
-                    "window_start_utc": window_start.isoformat(),
-                    "window_end_utc": window_end.isoformat(),
-                    "earliest_occurred_at": earliest.isoformat(),
-                    "latest_occurred_at": latest.isoformat(),
-                    "granule_count": count,
-                    "representative_event_id": representative_event_id,
-                    "member_event_ids": member_event_ids,
-                    "granules": granule_evidence,
-                    "evidence_type": "new_products_available",
-                },
+                evidence=event_evidence,
                 keywords=["aerosols", "satellite_observation", "satellite_instruments", "south_atlantic"],
                 entities=[{"name": instrument, "type": "instrument"}, {"name": "NASA CMR", "type": "source"}],
                 event_status=EventStatus.CATALOG_RECORD,
             ))
-        return CollectionResult(source="cmr", received=received, discarded=discarded, duplicates=duplicates, events=tuple(events))
+        notices = []
+        if viirs_consulted and all(
+            viirs_received[platform] == 0 for platform in viirs_consulted
+        ):
+            notices.append(
+                "VIIRS consultado sem grânulos na janela: "
+                + ", ".join(viirs_consulted)
+            )
+        if pagination_limited:
+            notices.append("paginação CMR limitada para: " + ", ".join(pagination_limited))
+        return CollectionResult(
+            source="cmr", received=received, discarded=discarded,
+            duplicates=duplicates, events=tuple(events),
+            notice="; ".join(notices) or None,
+        )
 
 
 class Merra2Collector:

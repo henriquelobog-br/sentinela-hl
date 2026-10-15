@@ -21,13 +21,20 @@ NOW = datetime(2026, 8, 4, 12, tzinfo=timezone.utc)
 
 def settings(**changes):
     base = RealSignalSettings.from_env()
-    return replace(base, **changes)
+    configured = {
+        "cmr_viirs_snpp_collection_ids": (),
+        "cmr_viirs_noaa20_collection_ids": (),
+        "cmr_viirs_noaa21_collection_ids": (),
+        **changes,
+    }
+    return replace(base, **configured)
 
 
 class Response:
-    def __init__(self, payload, status=200):
+    def __init__(self, payload, status=200, headers=None):
         self.payload = payload
         self.status_code = status
+        self.headers = headers or {}
 
     def raise_for_status(self):
         if self.status_code >= 400:
@@ -46,7 +53,8 @@ class Client:
 
     def get(self, url, **kwargs):
         self.calls.append(("GET", url, kwargs))
-        return Response(next(self.payloads))
+        response = next(self.payloads)
+        return response if isinstance(response, Response) else Response(response)
 
     def post(self, url, **kwargs):
         self.calls.append(("POST", url, kwargs))
@@ -200,6 +208,135 @@ def test_novo_granulo_cmr():
     assert "não confirma presença de poeira" in event.summary
     assert event.event_status is EventStatus.CATALOG_RECORD
     assert event.evidence[0]["granule_count"] == 1
+
+
+def test_cmr_config_preserva_colecoes_oficiais_e_page_size():
+    configured = RealSignalSettings.from_env()
+    assert configured.cmr_page_size == 200
+    assert configured.cmr_modis_collection_ids == ("C1443533440-LAADS",)
+    assert configured.cmr_calipso_collection_ids == ("C3551627908-LARC_CLOUD",)
+    assert configured.cmr_viirs_snpp_collection_ids == ("C4217896394-LAADS",)
+    assert configured.cmr_viirs_noaa20_collection_ids == ("C4218100848-LAADS",)
+    assert configured.cmr_viirs_noaa21_collection_ids == ("C4218210959-LAADS",)
+
+
+def test_novo_granulo_calipso_preservado():
+    configured = settings(
+        cmr_calipso_collection_ids=("C3551627908-LARC_CLOUD",),
+        cmr_modis_collection_ids=(),
+    )
+    result = CmrCollector(
+        configured, Client([{"feed": {"entry": [cmr_row("CALIPSO-1")]}}])
+    ).collect(NOW)
+    assert result.events[0].category == "new_calipso_granule"
+    assert result.events[0].event_status is EventStatus.CATALOG_RECORD
+
+
+def test_viirs_plataformas_emitem_catalogos_distintos_sem_afirmar_poeira():
+    cases = (
+        ("SNPP", "cmr_viirs_snpp_collection_ids", "C4217896394-LAADS"),
+        ("NOAA-20", "cmr_viirs_noaa20_collection_ids", "C4218100848-LAADS"),
+        ("NOAA-21", "cmr_viirs_noaa21_collection_ids", "C4218210959-LAADS"),
+    )
+    events = []
+    for platform, field, collection_id in cases:
+        configured = settings(
+            cmr_calipso_collection_ids=(),
+            cmr_modis_collection_ids=(),
+            **{field: (collection_id,)},
+        )
+        event = CmrCollector(
+            configured, Client([{"feed": {"entry": [cmr_row("VIIRS-1")]}}])
+        ).collect(NOW).events[0]
+        evidence = event.evidence[0]
+        assert event.category == "new_viirs_aerosol_granule"
+        assert event.source == "NASA CMR"
+        assert event.event_status is EventStatus.CATALOG_RECORD
+        assert event.scientific_area == "atmospheric_science"
+        assert evidence["instrument"] == "VIIRS"
+        assert evidence["platform"] == platform
+        assert evidence["collection_concept_id"] == collection_id
+        assert "não confirma presença de poeira" in event.summary
+        assert not any(
+            claim in (event.title + " " + event.summary).lower()
+            for claim in ("poeira detectada", "poeira transportada", "poeira chegou")
+        )
+        events.append(event)
+    assert len({event.id for event in events}) == 3
+
+
+def test_viirs_mesma_entrada_e_idempotente():
+    configured = settings(
+        cmr_calipso_collection_ids=(),
+        cmr_modis_collection_ids=(),
+        cmr_viirs_snpp_collection_ids=("C4217896394-LAADS",),
+    )
+    payload = {"feed": {"entry": [cmr_row("VIIRS-STABLE")]}}
+    first = CmrCollector(configured, Client([payload])).collect(NOW)
+    second = CmrCollector(configured, Client([payload])).collect(NOW)
+    assert first.events[0].id == second.events[0].id
+    assert first.events[0].evidence == second.events[0].evidence
+
+
+def test_cmr_request_usa_temporal_bbox_page_size_e_sort():
+    configured = settings(
+        cmr_calipso_collection_ids=(),
+        cmr_modis_collection_ids=("C1443533440-LAADS",),
+    )
+    client = Client([{"feed": {"entry": []}}])
+    CmrCollector(configured, client).collect(NOW)
+    params = client.calls[0][2]["params"]
+    assert params == {
+        "collection_concept_id": "C1443533440-LAADS",
+        "temporal": "2026-08-03T12:00:00+00:00,2026-08-04T12:00:00+00:00",
+        "bounding_box": "-55,-40,22,5",
+        "page_size": 200,
+        "sort_key[]": "-start_date",
+    }
+    assert "updated_since" not in params
+
+
+def test_cmr_search_after_tem_limite_de_paginas():
+    configured = settings(
+        cmr_calipso_collection_ids=(),
+        cmr_modis_collection_ids=("C1443533440-LAADS",),
+    )
+    pages = [
+        Response(
+            {"feed": {"entry": [cmr_row(f"PAGE-{index}")]}},
+            headers={"CMR-Search-After": f"token-{index}"},
+        )
+        for index in range(CmrCollector.MAX_PAGES_PER_COLLECTION)
+    ]
+    client = Client(pages)
+    result = CmrCollector(configured, client).collect(NOW)
+    assert len(client.calls) == CmrCollector.MAX_PAGES_PER_COLLECTION
+    assert "CMR-Search-After" not in client.calls[0][2]["headers"]
+    assert client.calls[1][2]["headers"]["CMR-Search-After"] == "token-0"
+    assert result.received == CmrCollector.MAX_PAGES_PER_COLLECTION
+    assert result.notice == "paginação CMR limitada para: C1443533440-LAADS"
+
+
+def test_zero_viirs_e_valido_e_observavel():
+    configured = settings(
+        cmr_calipso_collection_ids=(),
+        cmr_modis_collection_ids=(),
+        cmr_viirs_snpp_collection_ids=("C4217896394-LAADS",),
+        cmr_viirs_noaa20_collection_ids=("C4218100848-LAADS",),
+        cmr_viirs_noaa21_collection_ids=("C4218210959-LAADS",),
+    )
+    client = Client([{"feed": {"entry": []}}] * 3)
+    result = CmrCollector(configured, client).collect(NOW)
+    assert result.events == ()
+    assert result.error is None
+    assert result.notice == (
+        "VIIRS consultado sem grânulos na janela: SNPP, NOAA-20, NOAA-21"
+    )
+    assert [call[2]["params"]["collection_concept_id"] for call in client.calls] == [
+        "C4217896394-LAADS",
+        "C4218100848-LAADS",
+        "C4218210959-LAADS",
+    ]
 
 
 def test_granulo_cmr_ja_processado():
