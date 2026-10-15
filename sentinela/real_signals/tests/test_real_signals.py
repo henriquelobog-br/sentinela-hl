@@ -22,9 +22,12 @@ NOW = datetime(2026, 8, 4, 12, tzinfo=timezone.utc)
 def settings(**changes):
     base = RealSignalSettings.from_env()
     configured = {
-        "cmr_viirs_snpp_collection_ids": (),
-        "cmr_viirs_noaa20_collection_ids": (),
-        "cmr_viirs_noaa21_collection_ids": (),
+        "cmr_viirs_snpp_nrt_collection_ids": (),
+        "cmr_viirs_noaa20_nrt_collection_ids": (),
+        "cmr_viirs_noaa21_nrt_collection_ids": (),
+        "cmr_viirs_snpp_laads_collection_ids": (),
+        "cmr_viirs_noaa20_laads_collection_ids": (),
+        "cmr_viirs_noaa21_laads_collection_ids": (),
         **changes,
     }
     return replace(base, **configured)
@@ -54,6 +57,8 @@ class Client:
     def get(self, url, **kwargs):
         self.calls.append(("GET", url, kwargs))
         response = next(self.payloads)
+        if isinstance(response, BaseException):
+            raise response
         return response if isinstance(response, Response) else Response(response)
 
     def post(self, url, **kwargs):
@@ -70,11 +75,59 @@ def cmr_row(
     updated="2026-08-04T11:00:00Z",
     time_start="2026-08-04T10:00:00Z",
     region=None,
+    producer_granule_id=None,
 ):
-    row = {"id": granule, "producer_granule_id": f"MOD04_L2.{granule}", "updated": updated, "time_start": time_start, "time_end": time_start}
+    row = {
+        "id": granule,
+        "producer_granule_id": producer_granule_id or f"MOD04_L2.{granule}",
+        "updated": updated,
+        "time_start": time_start,
+        "time_end": time_start,
+    }
     if region:
         row["region"] = region
     return row
+
+
+def nrt_health_payload(time_start="2026-08-04T10:00:00Z"):
+    return {"feed": {"entry": [cmr_row("HEALTH", time_start=time_start)]}}
+
+
+def empty_feed():
+    return {"feed": {"entry": []}}
+
+
+def viirs_producer(platform, nrt=True, date_code="A2026216", time_code="1000"):
+    names = {"SNPP": "SNPP", "NOAA-20": "NOAA20", "NOAA-21": "NOAA21"}
+    suffix = "nrt" if nrt else "2026287105933"
+    return f"AERDB_L2_VIIRS_{names[platform]}.{date_code}.{time_code}.021.{suffix}.nc"
+
+
+def viirs_platform_settings(platform, nrt=True, laads=True):
+    nrt_ids = {
+        "SNPP": ("C4218441561-ASIPS",),
+        "NOAA-20": ("C4218441839-ASIPS",),
+        "NOAA-21": ("C4218441854-ASIPS",),
+    }
+    laads_ids = {
+        "SNPP": ("C4217896394-LAADS",),
+        "NOAA-20": ("C4218100848-LAADS",),
+        "NOAA-21": ("C4218210959-LAADS",),
+    }
+    fields = {
+        "SNPP": ("cmr_viirs_snpp_nrt_collection_ids", "cmr_viirs_snpp_laads_collection_ids"),
+        "NOAA-20": ("cmr_viirs_noaa20_nrt_collection_ids", "cmr_viirs_noaa20_laads_collection_ids"),
+        "NOAA-21": ("cmr_viirs_noaa21_nrt_collection_ids", "cmr_viirs_noaa21_laads_collection_ids"),
+    }
+    nrt_field, laads_field = fields[platform]
+    return settings(
+        cmr_calipso_collection_ids=(),
+        cmr_modis_collection_ids=(),
+        **{
+            nrt_field: nrt_ids[platform] if nrt else (),
+            laads_field: laads_ids[platform] if laads else (),
+        },
+    )
 
 
 def test_cams_valido_e_texto_factual():
@@ -213,11 +266,16 @@ def test_novo_granulo_cmr():
 def test_cmr_config_preserva_colecoes_oficiais_e_page_size():
     configured = RealSignalSettings.from_env()
     assert configured.cmr_page_size == 200
+    assert configured.cmr_lookback_hours == 48
+    assert configured.cmr_viirs_nrt_stale_hours == 12
     assert configured.cmr_modis_collection_ids == ("C1443533440-LAADS",)
     assert configured.cmr_calipso_collection_ids == ("C3551627908-LARC_CLOUD",)
-    assert configured.cmr_viirs_snpp_collection_ids == ("C4217896394-LAADS",)
-    assert configured.cmr_viirs_noaa20_collection_ids == ("C4218100848-LAADS",)
-    assert configured.cmr_viirs_noaa21_collection_ids == ("C4218210959-LAADS",)
+    assert configured.cmr_viirs_snpp_nrt_collection_ids == ("C4218441561-ASIPS",)
+    assert configured.cmr_viirs_noaa20_nrt_collection_ids == ("C4218441839-ASIPS",)
+    assert configured.cmr_viirs_noaa21_nrt_collection_ids == ("C4218441854-ASIPS",)
+    assert configured.cmr_viirs_snpp_laads_collection_ids == ("C4217896394-LAADS",)
+    assert configured.cmr_viirs_noaa20_laads_collection_ids == ("C4218100848-LAADS",)
+    assert configured.cmr_viirs_noaa21_laads_collection_ids == ("C4218210959-LAADS",)
 
 
 def test_novo_granulo_calipso_preservado():
@@ -234,19 +292,15 @@ def test_novo_granulo_calipso_preservado():
 
 def test_viirs_plataformas_emitem_catalogos_distintos_sem_afirmar_poeira():
     cases = (
-        ("SNPP", "cmr_viirs_snpp_collection_ids", "C4217896394-LAADS"),
-        ("NOAA-20", "cmr_viirs_noaa20_collection_ids", "C4218100848-LAADS"),
-        ("NOAA-21", "cmr_viirs_noaa21_collection_ids", "C4218210959-LAADS"),
+        ("SNPP", "C4218441561-ASIPS"),
+        ("NOAA-20", "C4218441839-ASIPS"),
+        ("NOAA-21", "C4218441854-ASIPS"),
     )
     events = []
-    for platform, field, collection_id in cases:
-        configured = settings(
-            cmr_calipso_collection_ids=(),
-            cmr_modis_collection_ids=(),
-            **{field: (collection_id,)},
-        )
+    for platform, collection_id in cases:
         event = CmrCollector(
-            configured, Client([{"feed": {"entry": [cmr_row("VIIRS-1")]}}])
+            viirs_platform_settings(platform, laads=False),
+            Client([nrt_health_payload(), {"feed": {"entry": [cmr_row("VIIRS-1", producer_granule_id=viirs_producer(platform))]}}]),
         ).collect(NOW).events[0]
         evidence = event.evidence[0]
         assert event.category == "new_viirs_aerosol_granule"
@@ -255,6 +309,8 @@ def test_viirs_plataformas_emitem_catalogos_distintos_sem_afirmar_poeira():
         assert event.scientific_area == "atmospheric_science"
         assert evidence["instrument"] == "VIIRS"
         assert evidence["platform"] == platform
+        assert evidence["provider"] == "ASIPS"
+        assert evidence["product_family"] == "AERDB_L2"
         assert evidence["collection_concept_id"] == collection_id
         assert "não confirma presença de poeira" in event.summary
         assert not any(
@@ -266,14 +322,10 @@ def test_viirs_plataformas_emitem_catalogos_distintos_sem_afirmar_poeira():
 
 
 def test_viirs_mesma_entrada_e_idempotente():
-    configured = settings(
-        cmr_calipso_collection_ids=(),
-        cmr_modis_collection_ids=(),
-        cmr_viirs_snpp_collection_ids=("C4217896394-LAADS",),
-    )
-    payload = {"feed": {"entry": [cmr_row("VIIRS-STABLE")]}}
-    first = CmrCollector(configured, Client([payload])).collect(NOW)
-    second = CmrCollector(configured, Client([payload])).collect(NOW)
+    configured = viirs_platform_settings("SNPP", laads=False)
+    payload = {"feed": {"entry": [cmr_row("VIIRS-STABLE", producer_granule_id=viirs_producer("SNPP"))]}}
+    first = CmrCollector(configured, Client([nrt_health_payload(), payload])).collect(NOW)
+    second = CmrCollector(configured, Client([nrt_health_payload(), payload])).collect(NOW)
     assert first.events[0].id == second.events[0].id
     assert first.events[0].evidence == second.events[0].evidence
 
@@ -288,12 +340,13 @@ def test_cmr_request_usa_temporal_bbox_page_size_e_sort():
     params = client.calls[0][2]["params"]
     assert params == {
         "collection_concept_id": "C1443533440-LAADS",
-        "temporal": "2026-08-03T12:00:00+00:00,2026-08-04T12:00:00+00:00",
+        "temporal": "2026-08-02T12:00:00+00:00,2026-08-04T12:00:00+00:00",
         "bounding_box": "-55,-40,22,5",
         "page_size": 200,
         "sort_key[]": "-start_date",
     }
     assert "updated_since" not in params
+    assert configured.cmr_lookback_hours == 48
 
 
 def test_cmr_search_after_tem_limite_de_paginas():
@@ -321,11 +374,18 @@ def test_zero_viirs_e_valido_e_observavel():
     configured = settings(
         cmr_calipso_collection_ids=(),
         cmr_modis_collection_ids=(),
-        cmr_viirs_snpp_collection_ids=("C4217896394-LAADS",),
-        cmr_viirs_noaa20_collection_ids=("C4218100848-LAADS",),
-        cmr_viirs_noaa21_collection_ids=("C4218210959-LAADS",),
+        cmr_viirs_snpp_nrt_collection_ids=("C4218441561-ASIPS",),
+        cmr_viirs_noaa20_nrt_collection_ids=("C4218441839-ASIPS",),
+        cmr_viirs_noaa21_nrt_collection_ids=("C4218441854-ASIPS",),
+        cmr_viirs_snpp_laads_collection_ids=("C4217896394-LAADS",),
+        cmr_viirs_noaa20_laads_collection_ids=("C4218100848-LAADS",),
+        cmr_viirs_noaa21_laads_collection_ids=("C4218210959-LAADS",),
     )
-    client = Client([{"feed": {"entry": []}}] * 3)
+    client = Client([
+        nrt_health_payload(), empty_feed(),
+        nrt_health_payload(), empty_feed(),
+        nrt_health_payload(), empty_feed(),
+    ])
     result = CmrCollector(configured, client).collect(NOW)
     assert result.events == ()
     assert result.error is None
@@ -333,10 +393,189 @@ def test_zero_viirs_e_valido_e_observavel():
         "VIIRS consultado sem grânulos na janela: SNPP, NOAA-20, NOAA-21"
     )
     assert [call[2]["params"]["collection_concept_id"] for call in client.calls] == [
-        "C4217896394-LAADS",
-        "C4218100848-LAADS",
-        "C4218210959-LAADS",
+        "C4218441561-ASIPS", "C4218441561-ASIPS",
+        "C4218441839-ASIPS", "C4218441839-ASIPS",
+        "C4218441854-ASIPS", "C4218441854-ASIPS",
     ]
+    assert all("C4217896394-LAADS" not in str(call[2]["params"]) for call in client.calls)
+
+
+def test_nrt_health_probe_nao_usa_temporal_nem_bbox():
+    client = Client([nrt_health_payload(), empty_feed()])
+    CmrCollector(viirs_platform_settings("SNPP", laads=False), client).collect(NOW)
+    health_params = client.calls[0][2]["params"]
+    corridor_params = client.calls[1][2]["params"]
+    assert health_params == {
+        "collection_concept_id": "C4218441561-ASIPS",
+        "page_size": 1,
+        "sort_key[]": "-start_date",
+    }
+    assert "temporal" not in health_params
+    assert "bounding_box" not in health_params
+    assert "updated_since" not in health_params
+    assert "updated_since" not in corridor_params
+    assert corridor_params["temporal"] == "2026-08-02T12:00:00+00:00,2026-08-04T12:00:00+00:00"
+    assert corridor_params["bounding_box"] == "-55,-40,22,5"
+    assert corridor_params["page_size"] == 200
+    assert corridor_params["sort_key[]"] == "-start_date"
+
+
+def test_nrt_saudavel_nao_consulta_laads():
+    client = Client([
+        nrt_health_payload(),
+        {"feed": {"entry": [cmr_row("VIIRS-1", producer_granule_id=viirs_producer("SNPP"))]}},
+    ])
+    result = CmrCollector(viirs_platform_settings("SNPP"), client).collect(NOW)
+    assert result.events[0].evidence[0]["provider"] == "ASIPS"
+    assert result.events[0].evidence[0]["collection_concept_id"] == "C4218441561-ASIPS"
+    assert [call[2]["params"]["collection_concept_id"] for call in client.calls] == [
+        "C4218441561-ASIPS",
+        "C4218441561-ASIPS",
+    ]
+
+
+def test_nrt_stale_consulta_laads():
+    client = Client([
+        nrt_health_payload("2026-08-03T12:00:00Z"),
+        {"feed": {"entry": [cmr_row("VIIRS-LAADS", producer_granule_id=viirs_producer("SNPP", nrt=False))]}},
+    ])
+    result = CmrCollector(viirs_platform_settings("SNPP"), client).collect(NOW)
+    assert result.events[0].evidence[0]["provider"] == "LAADS"
+    assert result.events[0].evidence[0]["collection_concept_id"] == "C4217896394-LAADS"
+    assert "fallback=NRT_TO_LAADS reason=STALE" in result.notice
+    assert [call[2]["params"]["collection_concept_id"] for call in client.calls] == [
+        "C4218441561-ASIPS",
+        "C4217896394-LAADS",
+    ]
+
+
+def test_nrt_health_http_failure_consulta_laads():
+    client = Client([
+        Response(empty_feed(), status=500),
+        {"feed": {"entry": [cmr_row("VIIRS-LAADS", producer_granule_id=viirs_producer("SNPP", nrt=False))]}},
+    ])
+    result = CmrCollector(viirs_platform_settings("SNPP"), client).collect(NOW)
+    assert result.events[0].evidence[0]["provider"] == "LAADS"
+    assert "fallback=NRT_TO_LAADS reason=TECHNICAL_FAILURE" in result.notice
+
+
+def test_nrt_health_malformed_consulta_laads():
+    client = Client([
+        {"not": "cmr"},
+        {"feed": {"entry": [cmr_row("VIIRS-LAADS", producer_granule_id=viirs_producer("SNPP", nrt=False))]}},
+    ])
+    result = CmrCollector(viirs_platform_settings("SNPP"), client).collect(NOW)
+    assert result.events[0].evidence[0]["provider"] == "LAADS"
+    assert "reason=TECHNICAL_FAILURE" in result.notice
+
+
+def test_nrt_corridor_failure_consulta_laads():
+    client = Client([
+        nrt_health_payload(),
+        Response(empty_feed(), status=500),
+        {"feed": {"entry": [cmr_row("VIIRS-LAADS", producer_granule_id=viirs_producer("SNPP", nrt=False))]}},
+    ])
+    result = CmrCollector(viirs_platform_settings("SNPP"), client).collect(NOW)
+    assert result.events[0].evidence[0]["provider"] == "LAADS"
+    assert "reason=TECHNICAL_FAILURE" in result.notice
+    assert [call[2]["params"]["collection_concept_id"] for call in client.calls] == [
+        "C4218441561-ASIPS",
+        "C4218441561-ASIPS",
+        "C4217896394-LAADS",
+    ]
+
+
+def test_fallback_isolado_por_plataforma():
+    configured = settings(
+        cmr_calipso_collection_ids=(),
+        cmr_modis_collection_ids=(),
+        cmr_viirs_snpp_nrt_collection_ids=("C4218441561-ASIPS",),
+        cmr_viirs_noaa20_nrt_collection_ids=("C4218441839-ASIPS",),
+        cmr_viirs_noaa21_nrt_collection_ids=("C4218441854-ASIPS",),
+        cmr_viirs_snpp_laads_collection_ids=("C4217896394-LAADS",),
+        cmr_viirs_noaa20_laads_collection_ids=("C4218100848-LAADS",),
+        cmr_viirs_noaa21_laads_collection_ids=("C4218210959-LAADS",),
+    )
+    client = Client([
+        Response(empty_feed(), status=500),
+        {"feed": {"entry": [cmr_row("SNPP-LAADS", producer_granule_id=viirs_producer("SNPP", nrt=False))]}},
+        nrt_health_payload(),
+        {"feed": {"entry": [cmr_row("NOAA20-NRT", producer_granule_id=viirs_producer("NOAA-20"))]}},
+        nrt_health_payload(),
+        {"feed": {"entry": [cmr_row("NOAA21-NRT", producer_granule_id=viirs_producer("NOAA-21"))]}},
+    ])
+    result = CmrCollector(configured, client).collect(NOW)
+    providers = {event.evidence[0]["platform"]: event.evidence[0]["provider"] for event in result.events}
+    assert providers == {"SNPP": "LAADS", "NOAA-20": "ASIPS", "NOAA-21": "ASIPS"}
+    assert "VIIRS SNPP fallback=NRT_TO_LAADS reason=TECHNICAL_FAILURE" in result.notice
+    assert "NOAA-20 fallback" not in result.notice
+    assert [call[2]["params"]["collection_concept_id"] for call in client.calls] == [
+        "C4218441561-ASIPS", "C4217896394-LAADS",
+        "C4218441839-ASIPS", "C4218441839-ASIPS",
+        "C4218441854-ASIPS", "C4218441854-ASIPS",
+    ]
+
+
+def test_nrt_e_laads_nao_sao_fundidos():
+    client = Client([
+        nrt_health_payload(),
+        {"feed": {"entry": [
+            cmr_row("NRT-1", producer_granule_id=viirs_producer("SNPP")),
+            cmr_row("NRT-2", producer_granule_id=viirs_producer("SNPP", time_code="1006")),
+        ]}},
+    ])
+    result = CmrCollector(viirs_platform_settings("SNPP"), client).collect(NOW)
+    assert result.events[0].evidence[0]["granule_count"] == 2
+    assert result.events[0].evidence[0]["provider"] == "ASIPS"
+    assert all(call[2]["params"]["collection_concept_id"] != "C4217896394-LAADS" for call in client.calls)
+
+
+def test_identidade_independente_de_provider_e_concept_id():
+    nrt_row = cmr_row(
+        "NRT-CONCEPT",
+        producer_granule_id=viirs_producer("SNPP"),
+        time_start="2026-08-04T10:00:00Z",
+    )
+    laads_row = cmr_row(
+        "LAADS-CONCEPT",
+        producer_granule_id=viirs_producer("SNPP", nrt=False),
+        time_start="2026-08-04T10:00:00Z",
+    )
+    nrt = CmrCollector(
+        viirs_platform_settings("SNPP", laads=False),
+        Client([nrt_health_payload(), {"feed": {"entry": [nrt_row]}}]),
+    ).collect(NOW).events[0]
+    laads = CmrCollector(
+        viirs_platform_settings("SNPP"),
+        Client([
+            nrt_health_payload("2026-08-03T12:00:00Z"),
+            {"feed": {"entry": [laads_row]}},
+        ]),
+    ).collect(NOW).events[0]
+    assert nrt.id == laads.id
+    assert nrt.evidence[0]["member_event_ids"] == laads.evidence[0]["member_event_ids"]
+    assert nrt.evidence[0]["canonical_group_id"] == laads.evidence[0]["canonical_group_id"]
+    assert nrt.evidence[0]["provider"] == "ASIPS"
+    assert laads.evidence[0]["provider"] == "LAADS"
+    assert nrt.evidence[0]["collection_concept_id"] != laads.evidence[0]["collection_concept_id"]
+
+
+def test_plataforma_e_aquisicao_alteram_identidade():
+    snpp = CmrCollector(
+        viirs_platform_settings("SNPP", laads=False),
+        Client([nrt_health_payload(), {"feed": {"entry": [cmr_row("G1", producer_granule_id=viirs_producer("SNPP"), time_start="2026-08-04T10:00:00Z")]}}]),
+    ).collect(NOW).events[0]
+    noaa20 = CmrCollector(
+        viirs_platform_settings("NOAA-20", laads=False),
+        Client([nrt_health_payload(), {"feed": {"entry": [cmr_row("G1", producer_granule_id=viirs_producer("NOAA-20"), time_start="2026-08-04T10:00:00Z")]}}]),
+    ).collect(NOW).events[0]
+    earlier = CmrCollector(
+        viirs_platform_settings("SNPP", laads=False),
+        Client([nrt_health_payload(), {"feed": {"entry": [cmr_row("G1", producer_granule_id=viirs_producer("SNPP", time_code="0400"), time_start="2026-08-04T04:00:00Z")]}}]),
+    ).collect(NOW).events[0]
+    assert snpp.id != noaa20.id
+    assert snpp.id != earlier.id
+    assert snpp.evidence[0]["member_event_ids"] != earlier.evidence[0]["member_event_ids"]
 
 
 def test_granulo_cmr_ja_processado():

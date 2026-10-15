@@ -194,11 +194,16 @@ class RealSignalSettings:
     cams_region_ids: tuple[str, ...]
     cmr_api_url: str
     cmr_page_size: int
+    cmr_lookback_hours: int
+    cmr_viirs_nrt_stale_hours: int
     cmr_calipso_collection_ids: tuple[str, ...]
     cmr_modis_collection_ids: tuple[str, ...]
-    cmr_viirs_snpp_collection_ids: tuple[str, ...]
-    cmr_viirs_noaa20_collection_ids: tuple[str, ...]
-    cmr_viirs_noaa21_collection_ids: tuple[str, ...]
+    cmr_viirs_snpp_nrt_collection_ids: tuple[str, ...]
+    cmr_viirs_noaa20_nrt_collection_ids: tuple[str, ...]
+    cmr_viirs_noaa21_nrt_collection_ids: tuple[str, ...]
+    cmr_viirs_snpp_laads_collection_ids: tuple[str, ...]
+    cmr_viirs_noaa20_laads_collection_ids: tuple[str, ...]
+    cmr_viirs_noaa21_laads_collection_ids: tuple[str, ...]
     merra2_collection: str
     merra2_variable: str
     merra2_region_ids: tuple[str, ...]
@@ -284,11 +289,16 @@ class RealSignalSettings:
             cams_region_ids=tuple(value.strip() for value in environ.get("SENTINELA_CAMS_REGION", "all").split(",") if value.strip()),
             cmr_api_url=environ.get("NASA_CMR_API_URL", "https://cmr.earthdata.nasa.gov/search"),
             cmr_page_size=_int("SENTINELA_CMR_PAGE_SIZE", 200),
+            cmr_lookback_hours=_int("SENTINELA_CMR_LOOKBACK_HOURS", 48),
+            cmr_viirs_nrt_stale_hours=_int("SENTINELA_CMR_VIIRS_NRT_STALE_HOURS", 12),
             cmr_calipso_collection_ids=tuple(filter(None, environ.get("SENTINELA_CMR_CALIPSO_COLLECTION_IDS", "C3551627908-LARC_CLOUD").split(","))),
             cmr_modis_collection_ids=tuple(filter(None, environ.get("SENTINELA_CMR_MODIS_COLLECTION_IDS", "C1443533440-LAADS").split(","))),
-            cmr_viirs_snpp_collection_ids=tuple(filter(None, environ.get("SENTINELA_CMR_VIIRS_SNPP_COLLECTION_IDS", "C4217896394-LAADS").split(","))),
-            cmr_viirs_noaa20_collection_ids=tuple(filter(None, environ.get("SENTINELA_CMR_VIIRS_NOAA20_COLLECTION_IDS", "C4218100848-LAADS").split(","))),
-            cmr_viirs_noaa21_collection_ids=tuple(filter(None, environ.get("SENTINELA_CMR_VIIRS_NOAA21_COLLECTION_IDS", "C4218210959-LAADS").split(","))),
+            cmr_viirs_snpp_nrt_collection_ids=tuple(filter(None, environ.get("SENTINELA_CMR_VIIRS_SNPP_NRT_COLLECTION_IDS", "C4218441561-ASIPS").split(","))),
+            cmr_viirs_noaa20_nrt_collection_ids=tuple(filter(None, environ.get("SENTINELA_CMR_VIIRS_NOAA20_NRT_COLLECTION_IDS", "C4218441839-ASIPS").split(","))),
+            cmr_viirs_noaa21_nrt_collection_ids=tuple(filter(None, environ.get("SENTINELA_CMR_VIIRS_NOAA21_NRT_COLLECTION_IDS", "C4218441854-ASIPS").split(","))),
+            cmr_viirs_snpp_laads_collection_ids=tuple(filter(None, environ.get("SENTINELA_CMR_VIIRS_SNPP_LAADS_COLLECTION_IDS", "C4217896394-LAADS").split(","))),
+            cmr_viirs_noaa20_laads_collection_ids=tuple(filter(None, environ.get("SENTINELA_CMR_VIIRS_NOAA20_LAADS_COLLECTION_IDS", "C4218100848-LAADS").split(","))),
+            cmr_viirs_noaa21_laads_collection_ids=tuple(filter(None, environ.get("SENTINELA_CMR_VIIRS_NOAA21_LAADS_COLLECTION_IDS", "C4218210959-LAADS").split(","))),
             merra2_collection=environ.get("SENTINELA_MERRA2_COLLECTION", "C1276812830-GES_DISC"),
             merra2_variable=environ.get("SENTINELA_MERRA2_VARIABLE", "DUEXTTAU"),
             merra2_region_ids=tuple(value.strip() for value in environ.get("SENTINELA_MERRA2_REGION", "all").split(",") if value.strip()),

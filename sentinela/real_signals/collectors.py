@@ -314,8 +314,35 @@ class CamsCollector:
         return records
 
 
+def _cmr_provider(collection_id: str) -> str:
+    if collection_id.endswith("-ASIPS"):
+        return "ASIPS"
+    if collection_id.endswith("-LAADS"):
+        return "LAADS"
+    if collection_id.endswith("-LARC_CLOUD"):
+        return "LARC_CLOUD"
+    return collection_id.rsplit("-", 1)[-1]
+
+
+def _viirs_acquisition_token(producer_granule_id: str) -> str:
+    name = str(producer_granule_id or "").strip()
+    if name.lower().endswith(".nc"):
+        name = name[:-3]
+    parts = name.split(".")
+    if (
+        len(parts) >= 3
+        and parts[0].startswith("AERDB_L2_VIIRS_")
+        and parts[1].startswith("A")
+        and parts[2].isdigit()
+    ):
+        return ".".join(parts[:4] if len(parts) >= 4 else parts[:3])
+    return name
+
+
 class CmrCollector:
     MAX_PAGES_PER_COLLECTION = 10
+    VIIRS_PRODUCT_FAMILY = "AERDB_L2"
+    CORRIDOR_BBOX = (-55, -40, 22, 5)
 
     def __init__(self, settings: RealSignalSettings, client: Any | None = None, processed_ids: Iterable[str] = ()):
         self.settings = settings
@@ -323,101 +350,101 @@ class CmrCollector:
         self.processed_ids = set(processed_ids)
 
     def collect(self, now: datetime) -> CollectionResult:
-        start, end = _window(now, self.settings.window_hours)
+        start, end = _window(now, self.settings.cmr_lookback_hours)
         received = discarded = duplicates = 0
-        collections = (
+        bbox = self.CORRIDOR_BBOX
+        granules: dict[tuple[str, str, str], dict[str, Any]] = {}
+        pagination_limited: list[str] = []
+        notices: list[str] = []
+        catalog_collections = (
             ("calipso", "CALIPSO", self.settings.cmr_calipso_collection_ids),
             ("modis", "MODIS", self.settings.cmr_modis_collection_ids),
-            ("viirs", "SNPP", self.settings.cmr_viirs_snpp_collection_ids),
-            ("viirs", "NOAA-20", self.settings.cmr_viirs_noaa20_collection_ids),
-            ("viirs", "NOAA-21", self.settings.cmr_viirs_noaa21_collection_ids),
         )
-        bbox = (-55, -40, 22, 5)
-        granules: dict[tuple[str, str, str], dict[str, Any]] = {}
-        viirs_received = {"SNPP": 0, "NOAA-20": 0, "NOAA-21": 0}
-        viirs_consulted: list[str] = []
-        pagination_limited: list[str] = []
-        for kind, platform, ids in collections:
+        for kind, platform, ids in catalog_collections:
             for collection_id in ids:
-                if kind == "viirs" and platform not in viirs_consulted:
-                    viirs_consulted.append(platform)
-                search_after = None
-                for page in range(self.MAX_PAGES_PER_COLLECTION):
-                    headers = {"client-id": "sentinela-hl"}
-                    if search_after:
-                        headers["CMR-Search-After"] = search_after
-                    response = self.client.get(
-                        f"{self.settings.cmr_api_url.rstrip('/')}/granules.json",
-                        params={
-                            "collection_concept_id": collection_id,
-                            "temporal": f"{start.isoformat()},{end.isoformat()}",
-                            "bounding_box": ",".join(str(v) for v in bbox),
-                            "page_size": self.settings.cmr_page_size,
-                            "sort_key[]": "-start_date",
-                        },
-                        headers=headers,
-                    )
-                    response.raise_for_status()
-                    rows = response.json().get("feed", {}).get("entry", [])
-                    received += len(rows)
-                    if kind == "viirs":
-                        viirs_received[platform] += len(rows)
-                    for row in rows:
-                        granule_id = str(row.get("id") or row.get("producer_granule_id") or row.get("title"))
-                        granule_ur = str(row.get("producer_granule_id") or row.get("title") or granule_id)
-                        revision = str(row.get("updated") or row.get("revision_date") or row.get("time_start"))
-                        identity = f"{collection_id}|{granule_id}|{revision}"
-                        if identity in self.processed_ids:
-                            duplicates += 1
-                            continue
-                        occurred = _dt(row.get("time_start") or row.get("updated"))
-                        region = str(row.get("region") or "south_atlantic")
-                        key = (collection_id, region, granule_id)
-                        current = granules.get(key)
-                        if current is not None:
-                            duplicates += 1
-                            if _dt(current["revision"]) >= _dt(revision):
-                                continue
-                        granules[key] = {
-                            "kind": kind,
-                            "platform": platform,
-                            "collection_id": collection_id,
-                            "region": region,
-                            "granule_id": granule_id,
-                            "granule_ur": granule_ur,
-                            "revision": revision,
-                            "occurred_at": occurred,
-                            "time_start": row.get("time_start"),
-                            "time_end": row.get("time_end"),
-                        }
-                    next_search_after = response.headers.get("CMR-Search-After")
-                    if not rows or not next_search_after:
-                        break
-                    search_after = next_search_after
-                else:
+                rows, limited = self._harvest_corridor(collection_id, start, end, bbox)
+                if limited:
                     pagination_limited.append(collection_id)
+                received, duplicates = self._ingest(
+                    rows, kind=kind, platform=platform, collection_id=collection_id,
+                    granules=granules, received=received, duplicates=duplicates,
+                )
 
-        grouped: dict[tuple[str, str, datetime], list[dict[str, Any]]] = {}
+        viirs_platforms = (
+            ("SNPP", self.settings.cmr_viirs_snpp_nrt_collection_ids, self.settings.cmr_viirs_snpp_laads_collection_ids),
+            ("NOAA-20", self.settings.cmr_viirs_noaa20_nrt_collection_ids, self.settings.cmr_viirs_noaa20_laads_collection_ids),
+            ("NOAA-21", self.settings.cmr_viirs_noaa21_nrt_collection_ids, self.settings.cmr_viirs_noaa21_laads_collection_ids),
+        )
+        viirs_received: dict[str, int] = {}
+        viirs_nrt_zero: list[str] = []
+        for platform, nrt_ids, laads_ids in viirs_platforms:
+            nrt_id = nrt_ids[0] if nrt_ids else None
+            laads_id = laads_ids[0] if laads_ids else None
+            if not nrt_id and not laads_id:
+                continue
+            selected_id = None
+            fallback_reason = None
+            if nrt_id:
+                health = self._nrt_health(nrt_id, now)
+                if health == "HEALTHY":
+                    try:
+                        rows, limited = self._harvest_corridor(nrt_id, start, end, bbox)
+                    except Exception:
+                        fallback_reason = "TECHNICAL_FAILURE"
+                    else:
+                        selected_id = nrt_id
+                        if limited:
+                            pagination_limited.append(nrt_id)
+                        if not rows:
+                            viirs_nrt_zero.append(platform)
+                else:
+                    fallback_reason = health
+            else:
+                fallback_reason = "TECHNICAL_FAILURE"
+            if selected_id is None:
+                if not laads_id:
+                    continue
+                rows, limited = self._harvest_corridor(laads_id, start, end, bbox)
+                selected_id = laads_id
+                if limited:
+                    pagination_limited.append(laads_id)
+                if fallback_reason:
+                    notices.append(
+                        f"VIIRS {platform} fallback=NRT_TO_LAADS reason={fallback_reason}"
+                    )
+            before = received
+            received, duplicates = self._ingest(
+                rows, kind="viirs", platform=platform, collection_id=selected_id,
+                granules=granules, received=received, duplicates=duplicates,
+            )
+            viirs_received[platform] = received - before
+
+        grouped: dict[tuple[str, str, str, datetime], list[dict[str, Any]]] = {}
         for granule in granules.values():
             window_start, _ = _six_hour_window(granule["occurred_at"])
+            grouping_id = granule["platform"] if granule["kind"] == "viirs" else granule["collection_id"]
             grouped.setdefault(
-                (granule["collection_id"], granule["region"], window_start), []
+                (granule["kind"], grouping_id, granule["region"], window_start), []
             ).append(granule)
 
         events: list[Event] = []
-        for (collection_id, region, window_start), members in sorted(grouped.items()):
+        for (kind, grouping_id, region, window_start), members in sorted(grouped.items()):
             members.sort(key=lambda item: (item["occurred_at"], item["granule_id"]))
             window_end = window_start + timedelta(hours=6)
             earliest = members[0]["occurred_at"]
             latest = members[-1]["occurred_at"]
-            kind = members[0]["kind"]
             platform = members[0]["platform"]
+            collection_id = members[0]["collection_id"]
             instrument = {"calipso": "CALIPSO/CALIOP", "modis": "MODIS", "viirs": "VIIRS"}[kind]
             event_type = {
                 "calipso": "new_calipso_granule",
                 "modis": "new_modis_aerosol_granule",
                 "viirs": "new_viirs_aerosol_granule",
             }[kind]
+            product = (
+                f"{self.VIIRS_PRODUCT_FAMILY}|{platform}|VIIRS"
+                if kind == "viirs" else collection_id
+            )
             product_name = f"VIIRS/{platform}" if kind == "viirs" else instrument
             count = len(members)
             noun = "produto" if count == 1 else "produtos"
@@ -434,10 +461,23 @@ class CmrCollector:
                 f"A disponibilidade {reference} não confirma "
                 "presença de poeira."
             )
-            member_event_ids = [
-                str(_uuid(f"cmr-granule|{collection_id}|{region}|{item['granule_id']}"))
-                for item in members
-            ]
+            window_id = window_start.isoformat()
+            if kind == "viirs":
+                member_event_ids = [
+                    str(_uuid("|".join((
+                        "cmr-granule", event_type, platform, "VIIRS",
+                        self.VIIRS_PRODUCT_FAMILY, item["occurred_at"].isoformat(),
+                        _viirs_acquisition_token(item["granule_ur"]), region,
+                    ))))
+                    for item in members
+                ]
+                group = f"cmr:{self.VIIRS_PRODUCT_FAMILY}:{platform}:{region}:{window_id}"
+            else:
+                member_event_ids = [
+                    str(_uuid(f"cmr-granule|{collection_id}|{region}|{item['granule_id']}"))
+                    for item in members
+                ]
+                group = f"cmr:{collection_id}:{region}:{window_id}"
             granule_evidence = [
                 {
                     "event_id": event_id,
@@ -449,11 +489,8 @@ class CmrCollector:
                 }
                 for event_id, item in zip(member_event_ids, members)
             ]
-            window_id = window_start.isoformat()
             representative_event_id = str(_uuid(
-                "event|" + "|".join((
-                    "NASA CMR", event_type, collection_id, window_id, region
-                ))
+                "event|" + "|".join(("NASA CMR", event_type, product, window_id, region))
             ))
             event_evidence = {
                 "source": "NASA CMR",
@@ -471,29 +508,33 @@ class CmrCollector:
                 "evidence_type": "new_products_available",
             }
             if kind == "viirs":
-                event_evidence.update({"instrument": instrument, "platform": platform})
+                event_evidence.update({
+                    "instrument": instrument,
+                    "platform": platform,
+                    "provider": _cmr_provider(collection_id),
+                    "product_family": self.VIIRS_PRODUCT_FAMILY,
+                })
             events.append(_event(
                 event_type=event_type,
                 source="NASA CMR",
-                product=collection_id,
+                product=product,
                 region=region,
                 window=window_id,
                 title=title,
                 summary=summary,
                 occurred_at=latest,
-                group=f"cmr:{collection_id}:{region}:{window_id}",
+                group=group,
                 evidence=event_evidence,
                 keywords=["aerosols", "satellite_observation", "satellite_instruments", "south_atlantic"],
                 entities=[{"name": instrument, "type": "instrument"}, {"name": "NASA CMR", "type": "source"}],
                 event_status=EventStatus.CATALOG_RECORD,
             ))
-        notices = []
-        if viirs_consulted and all(
-            viirs_received[platform] == 0 for platform in viirs_consulted
+        if viirs_received and viirs_nrt_zero and set(viirs_nrt_zero) == set(viirs_received) and all(
+            count == 0 for count in viirs_received.values()
         ):
             notices.append(
                 "VIIRS consultado sem grânulos na janela: "
-                + ", ".join(viirs_consulted)
+                + ", ".join(viirs_nrt_zero)
             )
         if pagination_limited:
             notices.append("paginação CMR limitada para: " + ", ".join(pagination_limited))
@@ -502,6 +543,110 @@ class CmrCollector:
             duplicates=duplicates, events=tuple(events),
             notice="; ".join(notices) or None,
         )
+
+    def _granules_url(self) -> str:
+        return f"{self.settings.cmr_api_url.rstrip('/')}/granules.json"
+
+    def _get(self, params: dict[str, Any], extra_headers: dict[str, str] | None = None) -> Any:
+        headers = {"client-id": "sentinela-hl"}
+        if extra_headers:
+            headers.update(extra_headers)
+        return self.client.get(self._granules_url(), params=params, headers=headers)
+
+    def _nrt_health(self, collection_id: str, now: datetime) -> str:
+        try:
+            response = self._get({
+                "collection_concept_id": collection_id,
+                "page_size": 1,
+                "sort_key[]": "-start_date",
+            })
+            response.raise_for_status()
+            payload = response.json()
+            entries = payload.get("feed", {}).get("entry") if isinstance(payload, dict) else None
+            if not isinstance(entries, list) or not entries or not isinstance(entries[0], dict):
+                return "TECHNICAL_FAILURE"
+            time_start = entries[0].get("time_start")
+            if not time_start:
+                return "TECHNICAL_FAILURE"
+            age_hours = (now - _dt(str(time_start))).total_seconds() / 3600
+            if age_hours > self.settings.cmr_viirs_nrt_stale_hours:
+                return "STALE"
+            return "HEALTHY"
+        except Exception:
+            return "TECHNICAL_FAILURE"
+
+    def _harvest_corridor(
+        self, collection_id: str, start: datetime, end: datetime, bbox: tuple[float, float, float, float]
+    ) -> tuple[list[dict[str, Any]], bool]:
+        rows_all: list[dict[str, Any]] = []
+        search_after = None
+        limited = False
+        for _page in range(self.MAX_PAGES_PER_COLLECTION):
+            extra_headers = {"CMR-Search-After": search_after} if search_after else None
+            response = self._get(
+                {
+                    "collection_concept_id": collection_id,
+                    "temporal": f"{start.isoformat()},{end.isoformat()}",
+                    "bounding_box": ",".join(str(v) for v in bbox),
+                    "page_size": self.settings.cmr_page_size,
+                    "sort_key[]": "-start_date",
+                },
+                extra_headers,
+            )
+            response.raise_for_status()
+            payload = response.json() if hasattr(response, "json") else {}
+            rows = payload.get("feed", {}).get("entry", []) if isinstance(payload, dict) else []
+            rows_all.extend(rows or [])
+            next_search_after = response.headers.get("CMR-Search-After")
+            if not rows or not next_search_after:
+                break
+            search_after = next_search_after
+        else:
+            limited = True
+        return rows_all, limited
+
+    def _ingest(
+        self,
+        rows: list[dict[str, Any]],
+        *,
+        kind: str,
+        platform: str,
+        collection_id: str,
+        granules: dict[tuple[str, str, str], dict[str, Any]],
+        received: int,
+        duplicates: int,
+    ) -> tuple[int, int]:
+        received += len(rows)
+        for row in rows:
+            granule_id = str(row.get("id") or row.get("producer_granule_id") or row.get("title"))
+            granule_ur = str(row.get("producer_granule_id") or row.get("title") or granule_id)
+            revision = str(row.get("updated") or row.get("revision_date") or row.get("time_start"))
+            identity = f"{collection_id}|{granule_id}|{revision}"
+            if identity in self.processed_ids:
+                duplicates += 1
+                continue
+            occurred = _dt(row.get("time_start") or row.get("updated"))
+            region = str(row.get("region") or "south_atlantic")
+            key = (collection_id, region, granule_id)
+            current = granules.get(key)
+            if current is not None:
+                duplicates += 1
+                if _dt(current["revision"]) >= _dt(revision):
+                    continue
+            granules[key] = {
+                "kind": kind,
+                "platform": platform,
+                "collection_id": collection_id,
+                "provider": _cmr_provider(collection_id),
+                "region": region,
+                "granule_id": granule_id,
+                "granule_ur": granule_ur,
+                "revision": revision,
+                "occurred_at": occurred,
+                "time_start": row.get("time_start"),
+                "time_end": row.get("time_end"),
+            }
+        return received, duplicates
 
 
 class Merra2Collector:
