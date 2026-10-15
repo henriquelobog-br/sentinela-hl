@@ -365,14 +365,13 @@ def donki_row(endpoint, identifier="2026-01"):
     return row
 
 
-def donki_result(overrides=None, key="DEMO_KEY"):
+def donki_result(overrides=None):
     overrides = overrides or {}
     responses = []
     for endpoint in ("CME", "FLR", "GST", "SEP", "IPS"):
         responses.append(overrides.get(endpoint, [donki_row(endpoint, f"{endpoint}-1")]))
-    configured = settings(donki_api_key=key)
     client = Client(responses)
-    return DonkiCollector(configured, client).collect(NOW), client
+    return DonkiCollector(settings(), client).collect(NOW), client
 
 
 def test_donki_cme():
@@ -423,27 +422,43 @@ def test_donki_campos_opcionais_ausentes():
     assert result.events[0].evidence[0]["speed"] is None
 
 
-def test_donki_demo_key_enviado_sem_impressao():
+def test_donki_usa_endpoint_ccmc_sem_chave():
     _, client = donki_result()
-    assert all(call[1]["params"]["api_key"] == "DEMO_KEY" for call in client.calls)
+    assert [call[0] for call in client.calls] == [
+        f"https://ccmc.gsfc.nasa.gov/DONKI-API/get/{endpoint}"
+        for endpoint in ("CME", "FLR", "GST", "SEP", "IPS")
+    ]
+    assert all(
+        call[1]["params"] == {"startDate": "2026-08-01", "endDate": "2026-08-04"}
+        for call in client.calls
+    )
+    result, _ = donki_result({endpoint: [] for endpoint in ("CME", "FLR", "GST", "SEP", "IPS")})
+    assert result.received == 0
+    assert result.events == ()
+    assert result.notice is None
 
 
 def test_donki_erro_sanitizado():
     responses = [Response({}, 403)] * 5
-    result = DonkiCollector(settings(donki_api_key="secret-key"), Client(responses)).collect(NOW)
+    result = DonkiCollector(settings(), Client(responses)).collect(NOW)
     assert result.events == ()
     assert result.notice == "falhas parciais: CME=HTTP 403, FLR=HTTP 403, GST=HTTP 403, SEP=HTTP 403, IPS=HTTP 403"
-    assert "secret-key" not in str(result)
+    partial, _ = donki_result({
+        "CME": Response({}, 503),
+        "FLR": [donki_row("FLR", "FLR-valid")],
+        "GST": [],
+        "SEP": [],
+        "IPS": [],
+    })
+    assert [event.category for event in partial.events] == ["solar_flare_detected"]
+    assert partial.notice == "falhas parciais: CME=HTTP 503"
 
 
-def test_donki_usa_fallback_oficial_ccmc_em_rate_limit():
-    responses = [Response({}, 429), [donki_row("CME")], [], [], [], []]
-    client = Client(responses)
-    result = DonkiCollector(settings(donki_api_key="DEMO_KEY"), client).collect(NOW)
-    assert len(result.events) == 1
-    assert result.notice == "fallback oficial CCMC: CME"
-    assert "/DONKI/WS/get/CME" in client.calls[1][0]
-    assert "api_key" not in client.calls[1][1]["params"]
+def test_donki_runtime_nao_contem_endpoints_legacy():
+    source = Path("sentinela/real_signals/multithematic.py").read_text(encoding="utf-8")
+    assert "api.nasa.gov/DONKI" not in source
+    assert "kauai.ccmc.gsfc.nasa.gov/DONKI/WS/get" not in source
+    assert "api_key" not in source
 
 
 def test_donki_tempestade_preserva_kp_oficial():

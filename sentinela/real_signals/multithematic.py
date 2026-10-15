@@ -17,8 +17,7 @@ from .config import ForecastLocation, RealSignalSettings
 USGS_URL = "https://earthquake.usgs.gov/fdsnws/event/1/query"
 WEATHER_URL = "https://api.open-meteo.com/v1/forecast"
 MARINE_URL = "https://marine-api.open-meteo.com/v1/marine"
-DONKI_URL = "https://api.nasa.gov/DONKI"
-DONKI_CCMC_URL = "https://kauai.ccmc.gsfc.nasa.gov/DONKI/WS/get"
+DONKI_URL = "https://ccmc.gsfc.nasa.gov/DONKI-API/get"
 
 
 def _millis(value: Any) -> datetime:
@@ -431,25 +430,14 @@ class DonkiCollector:
         details = []
         received = discarded = duplicates = 0
         failures: list[str] = []
-        fallbacks: list[str] = []
         seen = set()
         for endpoint, event_type in self.ENDPOINTS.items():
             try:
                 response = self.client.get(
                     f"{DONKI_URL}/{endpoint}",
-                    params={"startDate": start, "endDate": end, "api_key": self.settings.donki_api_key},
+                    params={"startDate": start, "endDate": end},
                 )
-                try:
-                    response.raise_for_status()
-                except httpx.HTTPStatusError as exc:
-                    if exc.response.status_code != 429:
-                        raise
-                    response = self.client.get(
-                        f"{DONKI_CCMC_URL}/{endpoint}",
-                        params={"startDate": start, "endDate": end},
-                    )
-                    response.raise_for_status()
-                    fallbacks.append(endpoint)
+                response.raise_for_status()
                 rows = response.json()
                 if not isinstance(rows, list):
                     raise ValueError("resposta DONKI não é uma lista")
@@ -513,12 +501,7 @@ class DonkiCollector:
                     "source": "NASA DONKI", "region": endpoint,
                     "variable": "activity", "value": str(official_id),
                 })
-        notices = []
-        if failures:
-            notices.append("falhas parciais: " + ", ".join(failures))
-        if fallbacks:
-            notices.append("fallback oficial CCMC: " + ", ".join(fallbacks))
-        notice = "; ".join(notices) or None
+        notice = "falhas parciais: " + ", ".join(failures) if failures else None
         return CollectionResult(
             source="donki", received=received, discarded=discarded,
             duplicates=duplicates, events=tuple(events), notice=notice,
