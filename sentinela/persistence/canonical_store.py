@@ -261,6 +261,10 @@ class SupabaseCanonicalProvenanceStore:
     def _item(row: dict[str, Any]) -> CanonicalPersistenceItemResult:
         return CanonicalPersistenceItemResult(
             artifact_id=str(row["artifact_id"]),
+            canonical_event_id=(
+                UUID(str(row["canonical_event_id"]))
+                if row.get("canonical_event_id") is not None else None
+            ),
             disposition=PersistenceDisposition(str(row["disposition"])),
             content_hash=(
                 str(row["content_hash"])

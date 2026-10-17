@@ -84,6 +84,56 @@ def test_command_contract():
     assert bridge.BRIDGE_WATCHDOG_SECONDS == 1020
 
 
+def test_command_removes_only_disabled_source(tmp_path, monkeypatch, capsys):
+    disabled = tmp_path / "disabled-sources"
+    disabled.write_text("usgs\nusgs\n\n", encoding="utf-8")
+    monkeypatch.setattr(bridge, "DISABLED_SOURCES_FILE", disabled)
+
+    command = bridge._command_for_tier("urgent")
+
+    sources = command[command.index("--sources") + 1]
+    assert sources == "nws-alerts,usgs-volcano,gdelt,donki"
+    assert "gdelt" in sources.split(",")
+    assert capsys.readouterr().out == (
+        "SENTINELA_OPERATIONAL_MAINTENANCE tier=urgent "
+        "skipped_sources=usgs "
+        "effective_sources=nws-alerts,usgs-volcano,gdelt,donki\n"
+    )
+
+
+def test_absent_disabled_sources_file_restores_frozen_tier(
+    tmp_path, monkeypatch, capsys
+):
+    monkeypatch.setattr(
+        bridge, "DISABLED_SOURCES_FILE", tmp_path / "missing"
+    )
+
+    command = bridge._command_for_tier("urgent")
+
+    assert command[command.index("--sources") + 1] == (
+        "usgs,nws-alerts,usgs-volcano,gdelt,donki"
+    )
+    assert capsys.readouterr().out == ""
+
+
+def test_unknown_disabled_source_fails_closed(tmp_path, monkeypatch):
+    disabled = tmp_path / "disabled-sources"
+    disabled.write_text("usgs\nunknown-source\n", encoding="utf-8")
+    monkeypatch.setattr(bridge, "DISABLED_SOURCES_FILE", disabled)
+
+    with pytest.raises(RuntimeError, match="unknown disabled operational source"):
+        bridge._command_for_tier("urgent")
+
+
+def test_fully_disabled_tier_fails_closed(tmp_path, monkeypatch):
+    disabled = tmp_path / "disabled-sources"
+    disabled.write_text("gvp\n", encoding="utf-8")
+    monkeypatch.setattr(bridge, "DISABLED_SOURCES_FILE", disabled)
+
+    with pytest.raises(RuntimeError, match="all sources"):
+        bridge._command_for_tier("contextual")
+
+
 def test_response_contains_no_runner_output():
     response = bridge._response(
         tier="urgent",

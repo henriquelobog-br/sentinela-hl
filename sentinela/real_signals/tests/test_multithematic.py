@@ -79,6 +79,7 @@ def test_usgs_acima_do_threshold():
     assert "não implica" in event.summary
     assert event.evidence[0]["tsunami"] == 1
     assert event.event_status is EventStatus.OBSERVED_FACT
+    assert event.scientific_area == "seismology"
 
 
 def test_usgs_abaixo_do_threshold():
@@ -87,12 +88,13 @@ def test_usgs_abaixo_do_threshold():
     assert result.discarded == 1
 
 
-def test_usgs_revisao_mantem_grupo_e_muda_evento():
+def test_usgs_revisao_mantem_identidade_e_atualiza_evidencia():
     first = UsgsCollector(settings(), Client([{"features": [usgs_feature(updated=1785848400000)]}])).collect(NOW)
     second = UsgsCollector(settings(), Client([{"features": [usgs_feature(updated=1785852000000)]}])).collect(NOW)
-    assert first.events[0].id != second.events[0].id
+    assert first.events[0].id == second.events[0].id
     assert first.events[0].primary_claim_id is None
     assert second.events[0].primary_claim_id is None
+    assert first.events[0].evidence[0]["updated_at"] != second.events[0].evidence[0]["updated_at"]
     assert (
         first.events[0].evidence[0]["canonical_group_id"]
         == second.events[0].evidence[0]["canonical_group_id"]

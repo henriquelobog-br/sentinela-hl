@@ -29,6 +29,7 @@ from sentinela.projection.tests.test_researcher_signal import single_item_bullet
 FAKE_URL = "https://fake-project.supabase.co"
 FAKE_KEY = "fake-service-role-key"
 RUN_ID = "11111111-1111-4111-8111-111111111111"
+CANONICAL_EVENT_ID = "22222222-2222-4222-8222-222222222222"
 
 
 class Response:
@@ -102,6 +103,7 @@ def test_adapter_uses_restricted_event_signal_and_manifest_rpcs():
                 [
                     {
                         "artifact_id": str(event.id),
+                        "canonical_event_id": CANONICAL_EVENT_ID,
                         "disposition": "inserted",
                         "content_hash": "a" * 64,
                         "revision_id": RUN_ID,
@@ -128,6 +130,8 @@ def test_adapter_uses_restricted_event_signal_and_manifest_rpcs():
     adapter.finalize_manifest(RunManifestFinal(run_id=RUN_ID, stage="finalized"))
 
     assert event_result.items[0].disposition.value == "inserted"
+    assert str(event_result.items[0].canonical_event_id) == CANONICAL_EVENT_ID
+    assert signal_result.items[0].canonical_event_id is None
     assert signal_result.persisted == 1
     assert [call["url"].rsplit("/", 1)[-1] for call in client.calls] == [
         "begin_canonical_run_manifest",
@@ -136,6 +140,17 @@ def test_adapter_uses_restricted_event_signal_and_manifest_rpcs():
         "finalize_canonical_run_manifest",
     ]
     assert client.calls[-1]["json"]["p_commit_state"] == "known"
+
+
+def test_old_event_rpc_response_without_canonical_event_id_is_compatible():
+    item = SupabaseCanonicalProvenanceStore._item({
+        "artifact_id": RUN_ID,
+        "disposition": "observed_existing",
+        "content_hash": "a" * 64,
+        "revision_id": RUN_ID,
+    })
+
+    assert item.canonical_event_id is None
 
 
 def test_manifest_can_record_commit_ambiguity_without_retrying():

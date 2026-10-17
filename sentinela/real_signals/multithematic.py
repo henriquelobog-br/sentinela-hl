@@ -103,12 +103,13 @@ class UsgsCollector:
                 "event_url": properties.get("url"),
                 "retrieved_at": now.isoformat(),
             }
+            # USGS `updated` is revision metadata; the source ID is the stable event identity.
             events.append(_event(
                 event_type="earthquake_detected",
                 source="USGS",
                 product="earthquake-catalog",
                 region=str(source_id),
-                window=f"{source_id}|{updated.isoformat()}",
+                window=str(source_id),
                 group=f"usgs:{source_id}",
                 title=f"Terremoto de magnitude {magnitude:g} registrado em {place}",
                 summary=summary,

@@ -7,7 +7,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Literal
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import httpx
 
@@ -37,6 +37,7 @@ from sentinela.canonical_provenance import (
 from sentinela.canonical_provenance.models import (
     CanonicalEventPersistenceResult,
     CanonicalSignalPersistenceResult,
+    PersistenceDisposition,
     RunManifestFinal,
 )
 from sentinela.prioritized_bulletin.engine import _event_dedup_key
@@ -225,6 +226,46 @@ def _stable_group_signal(signal: ResearcherSignal, event_by_id: dict[str, Any]) 
         if member_event_ids:
             update["member_event_ids"] = tuple(member_event_ids)
     return signal.model_copy(update=update)
+
+
+def _remap_canonical_event_ids(
+    events: tuple[Any, ...],
+    persistence: CanonicalEventPersistenceResult,
+) -> tuple[Any, ...]:
+    canonical_ids = {
+        item.artifact_id: item.canonical_event_id
+        for item in persistence.items
+        if item.disposition != PersistenceDisposition.REJECTED
+        and item.canonical_event_id is not None
+    }
+    if not canonical_ids:
+        return events
+
+    remapped: dict[UUID, Any] = {}
+    for event in events:
+        event_id = canonical_ids.get(str(event.id), event.id)
+        evidence = []
+        for item in event.evidence:
+            if not isinstance(item, dict):
+                evidence.append(item)
+                continue
+            updated = dict(item)
+            representative = updated.get("representative_event_id")
+            if representative is not None and str(representative) in canonical_ids:
+                updated["representative_event_id"] = str(
+                    canonical_ids[str(representative)]
+                )
+            members = updated.get("member_event_ids")
+            if isinstance(members, (list, tuple)):
+                updated["member_event_ids"] = [
+                    str(canonical_ids.get(str(member), member))
+                    for member in members
+                ]
+            evidence.append(updated)
+        remapped[event_id] = event.model_copy(
+            update={"id": event_id, "evidence": evidence}
+        )
+    return tuple(remapped.values())
 
 
 def _geographic_terms(event: Any) -> tuple[str, ...]:
@@ -654,6 +695,9 @@ def _execute_real_signals(
         progress.stage = "canonical_event_persistence"
         canonical_event_persistence = canonical_store.persist_events(
             run_id, canonical_acceptance
+        )
+        events = _remap_canonical_event_ids(
+            events, canonical_event_persistence
         )
     progress.candidates_generated = len(events)
     progress.stage = "event_persistence"

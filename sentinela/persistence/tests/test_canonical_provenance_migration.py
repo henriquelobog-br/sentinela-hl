@@ -27,6 +27,12 @@ def migration_024_text() -> str:
     ).read_text(encoding="utf-8").lower()
 
 
+def migration_038_text() -> str:
+    return Path(
+        "supabase/migrations/038_usgs_seismic_source_identity_dedup.sql"
+    ).read_text(encoding="utf-8").lower()
+
+
 def _signal_function(sql: str) -> str:
     start = sql.index(
         "create or replace function public.persist_canonical_signal_batch("
@@ -409,3 +415,148 @@ def test_024_has_no_top_level_data_or_publication_changes():
     assert "alter table" not in sql
     assert "drop " not in sql
     assert "truncate" not in sql
+
+
+def test_038_is_transactional_and_materializes_frozen_cleanup_sets():
+    sql = migration_038_text()
+    assert sql.startswith("-- 038_usgs_seismic_source_identity_dedup.sql")
+    assert "begin;" in sql
+    assert sql.rstrip().endswith("commit;")
+    assert "create temporary table usgs_seismic_event_dedup_map" in sql
+    assert "create temporary table usgs_seismic_revision_moves" in sql
+    assert "create temporary table usgs_seismic_occurrence_moves" in sql
+    assert "create temporary table usgs_seismic_editorial_deletes" in sql
+    assert "nullif(events.evidence -> 0 ->> 'updated_at', '')::timestamptz desc nulls last" in sql
+    assert "events.created_at desc" in sql
+    assert "events.id desc" in sql
+
+
+def test_038_freezes_legacy_counts_and_remaps_only_supported_dependencies():
+    sql = migration_038_text()
+    for expected in (
+        "v_initial_count <> 254",
+        "v_distinct_count <> 202",
+        "v_mapping_count <> 52",
+        "v_revision_moves <> 111",
+        "v_occurrence_moves <> 111",
+        "v_editorial_deletes <> 51",
+        "v_published_keepers <> 7",
+        "v_published_removed <> 0",
+        "v_actual_revision_moves <> 111",
+        "v_actual_occurrence_moves <> 111",
+        "v_actual_editorial_deletes <> 51",
+        "v_actual_event_deletes <> 52",
+    ):
+        assert expected in sql
+    assert "set canonical_event_id = moves.keep_id" in sql
+    assert "set canonical_event_id = moves.keep_id\n    from usgs_seismic_occurrence_moves" in sql
+    assert "set event_revision_id" not in sql
+    assert "delete from editorial.seismic_contents" in sql
+    assert "delete from knowledge.events" in sql
+
+
+def test_038_fails_closed_on_collisions_counterparts_publication_and_references():
+    sql = migration_038_text()
+    assert "usgs revision hash collision after keeper collapse" in sql
+    assert "duplicate seismic editorial lacks keeper counterpart" in sql
+    assert "removed event referenced by signal_event_members" in sql
+    assert "removed event referenced by bulletin_events" in sql
+    assert "removed event referenced by contradictions" in sql
+    assert "removed event referenced by researcher_signals" in sql
+    assert "removed event referenced by volcanic editorial" in sql
+    assert "publication_approved" in sql
+    assert "if v_mapping_count = 0 then\n        return;" in sql
+
+
+def test_038_installs_partial_unique_usgs_source_identity_guard():
+    sql = migration_038_text()
+    index = sql.split(
+        "create unique index if not exists events_usgs_seismic_source_event_id_uidx",
+        1,
+    )[1].split("drop function", 1)[0]
+    assert "evidence -> 0 ->> 'source_event_id'" in index
+    assert "source = 'usgs'" in index
+    assert "scientific_area = 'seismology'" in index
+    assert "category = 'earthquake_detected'" in index
+    assert "source identity unique guard is not valid" in sql
+
+
+def test_038_event_rpc_reconciles_keeper_and_returns_effective_id():
+    sql = migration_038_text()
+    returns = sql.split("returns table (", 1)[1].split(")", 1)[0]
+    assert "artifact_id text" in returns
+    assert "canonical_event_id uuid" in returns
+    assert "disposition text" in returns
+    assert "content_hash text" in returns
+    assert "revision_id uuid" in returns
+    assert "v_candidate_event_id := v_event.id" in sql
+    assert "existing.evidence -> 0 ->> 'source_event_id'" in sql
+    assert "v_event.id := v_existing.id" in sql
+    assert "artifact_id := v_candidate_id" in sql
+    assert "canonical_event_id := v_effective.id" in sql
+    assert "canonical_event_id := null" in sql
+    assert "p_run_id, v_candidate_id, v_effective.id, v_revision_id" in sql
+
+
+def test_038_preserves_keeper_pk_curator_fields_and_rpc_security():
+    sql = migration_038_text()
+    event_update = sql.split("update knowledge.events as events set", 1)[1].split(
+        "where events.id = v_existing.id", 1
+    )[0]
+    assert "id =" not in event_update
+    for field in (
+        "primary_claim_id",
+        "epistemic_status",
+        "confidence_score",
+        "pipeline_status",
+        "requires_human_review",
+        "review_decision",
+        "validated_by",
+        "validated_at",
+        "publication_approved",
+    ):
+        assert f"{field} =" not in event_update
+    assert "drop function public.persist_canonical_event_batch(uuid, jsonb, jsonb)" in sql
+    assert "security definer" in sql
+    assert "set search_path = pg_catalog" in sql
+    assert "from public, anon, authenticated" in sql
+    assert "to service_role" in sql
+
+
+def test_038_keeps_newer_usgs_snapshot_when_older_revision_arrives_late():
+    sql = migration_038_text()
+    assert "v_incoming_updated_at timestamptz" in sql
+    assert "v_existing_updated_at timestamptz" in sql
+    assert "usgs seismic event updated_at is required" in sql
+    assert "canonical usgs seismic event updated_at is required" in sql
+    assert "v_incoming_updated_at < v_existing_updated_at" in sql
+    stale_branch = sql.split(
+        "v_incoming_updated_at < v_existing_updated_at then", 1
+    )[1].split("elsif", 1)[0]
+    assert "v_effective := v_existing" in stale_branch
+    assert "v_disposition := 'observed_existing'" in stale_branch
+    assert "update knowledge.events" not in stale_branch
+    assert "v_effective.id, v_incoming_hash, v_snapshot" in sql
+
+
+def test_038_resolves_concurrent_first_insert_to_source_identity_winner():
+    sql = migration_038_text()
+    assert "on conflict do nothing" in sql
+    race_branch = sql.split("if v_inserted then", 1)[1].split(
+        "if v_existing_found then", 1
+    )[0]
+    assert "existing.evidence -> 0 ->> 'source_event_id'" in race_branch
+    assert "for update" in race_branch
+    assert "v_existing_found := found" in race_branch
+    assert "insert conflicted without a compatible winner" in race_branch
+    assert "v_event.id := v_existing.id" in race_branch
+    assert "events_usgs_seismic_source_event_id_uidx" in sql
+
+
+def test_038_preserves_keeper_editorial_without_claiming_sql_freshness():
+    sql = migration_038_text()
+    assert "duplicate seismic editorial lacks keeper counterpart" in sql
+    assert "delete from editorial.seismic_contents" in sql
+    assert "update editorial.seismic_contents" not in sql
+    assert "insert into editorial.seismic_contents" not in sql
+    assert "input_facts_signature =" not in sql

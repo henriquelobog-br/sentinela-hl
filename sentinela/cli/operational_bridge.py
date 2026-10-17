@@ -30,6 +30,7 @@ RUNNER_ENV_FILE: Final = Path(
 LOCK_FILE: Final = Path(
     "/tmp/sentinela-hl-o4c-operational.lock"
 )
+DISABLED_SOURCES_FILE: Final = Path("/run/sentinela/disabled-sources")
 
 JOB_TIMEOUT_SECONDS: Final = 900
 BRIDGE_WATCHDOG_SECONDS: Final = 1020
@@ -122,7 +123,24 @@ def _parse_request(line: bytes) -> str:
 
 
 def _command_for_tier(tier: str) -> tuple[str, ...]:
-    sources = TIER_SOURCES[tier]
+    disabled = _disabled_sources()
+    skipped = tuple(
+        source for source in TIER_SOURCES[tier]
+        if source in disabled
+    )
+    sources = tuple(
+        source for source in TIER_SOURCES[tier]
+        if source not in disabled
+    )
+    if skipped:
+        print(
+            "SENTINELA_OPERATIONAL_MAINTENANCE "
+            f"tier={tier} skipped_sources={','.join(skipped)} "
+            f"effective_sources={','.join(sources)}",
+            flush=True,
+        )
+    if not sources:
+        raise RuntimeError("all sources for operational tier are disabled")
 
     return (
         sys.executable,
@@ -138,6 +156,23 @@ def _command_for_tier(tier: str) -> tuple[str, ...]:
         "--job-timeout-seconds",
         str(JOB_TIMEOUT_SECONDS),
     )
+
+
+def _disabled_sources() -> frozenset[str]:
+    if not DISABLED_SOURCES_FILE.exists():
+        return frozenset()
+    disabled = frozenset(
+        line.strip()
+        for line in DISABLED_SOURCES_FILE.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    )
+    unknown = disabled - frozenset(ALL_SOURCES)
+    if unknown:
+        raise RuntimeError(
+            "unknown disabled operational source(s): "
+            + ",".join(sorted(unknown))
+        )
+    return disabled
 
 
 def _prepare_runtime() -> None:

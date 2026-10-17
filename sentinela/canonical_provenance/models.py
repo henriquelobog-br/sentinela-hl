@@ -160,6 +160,7 @@ class CanonicalSignalRecord(_FrozenModel):
 
 class CanonicalPersistenceItemResult(_FrozenModel):
     artifact_id: str
+    canonical_event_id: UUID | None = None
     disposition: PersistenceDisposition
     content_hash: str | None = None
     revision_id: UUID | None = None

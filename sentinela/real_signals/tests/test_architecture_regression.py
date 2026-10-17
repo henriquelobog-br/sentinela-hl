@@ -236,8 +236,8 @@ CASES = {
     ),
     "usgs_earthquake": (
         _earthquake,
-        "97b9230e-dcb0-460e-bec9-7a7ddf696dd5",
-        "025b4722acf8673a1748856f0a30d5fe8a2b5b0afb1e48d1a75e16f5744cb172",
+        "d58b4a61-46bd-461c-a12f-99dd585b7320",
+        "70cd206ea98ec987dae828663c1ca4e8b1d27f9029885e84e2053c4a1af8b72c",
         0.0,
         0.0,
         0.0,
