@@ -440,7 +440,7 @@ def test_038_freezes_legacy_counts_and_remaps_only_supported_dependencies():
         "v_revision_moves <> 111",
         "v_occurrence_moves <> 111",
         "v_editorial_deletes <> 51",
-        "v_published_keepers <> 7",
+        "v_published_total <> 7",
         "v_published_removed <> 0",
         "v_actual_revision_moves <> 111",
         "v_actual_occurrence_moves <> 111",
@@ -466,6 +466,33 @@ def test_038_fails_closed_on_collisions_counterparts_publication_and_references(
     assert "removed event referenced by volcanic editorial" in sql
     assert "publication_approved" in sql
     assert "if v_mapping_count = 0 then\n        return;" in sql
+
+
+def test_038_publication_assertion_counts_full_usgs_seismic_universe():
+    sql = migration_038_text()
+    published_total = sql.split(
+        "select count(*) into v_published_total", 1
+    )[1].split("select count(*) into v_published_removed", 1)[0]
+    assert "from knowledge.events as events" in published_total
+    assert "events.source = 'usgs'" in published_total
+    assert "events.scientific_area = 'seismology'" in published_total
+    assert "events.category = 'earthquake_detected'" in published_total
+    assert "events.publication_approved" in published_total
+    assert "usgs_seismic_event_dedup_map" not in published_total
+    assert "keep_id" not in published_total
+    assert "old_id" not in published_total
+
+    published_removed = sql.split(
+        "select count(*) into v_published_removed", 1
+    )[1].split("if v_published_total <> 7", 1)[0]
+    assert "usgs_seismic_event_dedup_map" in published_removed
+    assert "mapping.old_id = events.id" in published_removed
+    assert "events.publication_approved" in published_removed
+    assert "v_published_removed <> 0" in sql
+    assert "unexpected publication state: total %, removed %" in sql
+
+    final_assertion = sql.split("do $assert_final$", 1)[1]
+    assert "if v_published <> 7" in final_assertion
 
 
 def test_038_installs_partial_unique_usgs_source_identity_guard():

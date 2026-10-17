@@ -78,7 +78,7 @@ declare
     v_revision_moves integer;
     v_occurrence_moves integer;
     v_editorial_deletes integer;
-    v_published_keepers integer;
+    v_published_total integer;
     v_published_removed integer;
 begin
     select count(*) into v_mapping_count
@@ -169,21 +169,22 @@ begin
         raise exception 'duplicate seismic editorial lacks keeper counterpart';
     end if;
 
-    select count(*) into v_published_keepers
+    select count(*) into v_published_total
     from knowledge.events as events
-    where events.id in (
-        select distinct mapping.keep_id from usgs_seismic_event_dedup_map as mapping
-    ) and events.publication_approved;
+    where events.source = 'USGS'
+      and events.scientific_area = 'seismology'
+      and events.category = 'earthquake_detected'
+      and events.publication_approved;
 
     select count(*) into v_published_removed
     from knowledge.events as events
     join usgs_seismic_event_dedup_map as mapping on mapping.old_id = events.id
     where events.publication_approved;
 
-    if v_published_keepers <> 7 or v_published_removed <> 0 then
+    if v_published_total <> 7 or v_published_removed <> 0 then
         raise exception
-            'unexpected publication state: keepers %, removed %',
-            v_published_keepers, v_published_removed;
+            'unexpected publication state: total %, removed %',
+            v_published_total, v_published_removed;
     end if;
 
     if exists (
