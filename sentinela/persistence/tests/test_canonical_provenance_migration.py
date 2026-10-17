@@ -33,6 +33,12 @@ def migration_038_text() -> str:
     ).read_text(encoding="utf-8").lower()
 
 
+def migration_039_text() -> str:
+    return Path(
+        "supabase/migrations/039_canonical_event_stored_updated_at.sql"
+    ).read_text(encoding="utf-8").lower()
+
+
 def _signal_function(sql: str) -> str:
     start = sql.index(
         "create or replace function public.persist_canonical_signal_batch("
@@ -587,3 +593,39 @@ def test_038_preserves_keeper_editorial_without_claiming_sql_freshness():
     assert "update editorial.seismic_contents" not in sql
     assert "insert into editorial.seismic_contents" not in sql
     assert "input_facts_signature =" not in sql
+
+
+def test_039_extends_return_contract_without_changing_038_file():
+    sql_038 = Path(
+        "supabase/migrations/038_usgs_seismic_source_identity_dedup.sql"
+    ).read_text(encoding="utf-8")
+    sql = migration_039_text()
+    assert "stored_updated_at timestamptz" not in sql_038.lower().split(
+        "drop function public.persist_canonical_event_batch", 1
+    )[0]
+    assert "drop function public.persist_canonical_event_batch(uuid, jsonb, jsonb)" in sql
+    assert "create function public.persist_canonical_event_batch(" in sql
+    assert "create or replace function public.persist_canonical_event_batch(" not in sql
+    returns = sql.split("returns table (", 1)[1].split(")", 1)[0]
+    assert "artifact_id text" in returns
+    assert "canonical_event_id uuid" in returns
+    assert "disposition text" in returns
+    assert "content_hash text" in returns
+    assert "revision_id uuid" in returns
+    assert "stored_updated_at timestamptz" in returns
+    assert "security definer" in sql
+    assert "set search_path = pg_catalog" in sql
+    assert "from public, anon, authenticated" in sql
+    assert "to service_role" in sql
+    assert "v_effective.evidence -> 0 ->> 'updated_at'" in sql
+    accepted = sql.split("revision_id := v_occurrence.event_revision_id;", 1)[1]
+    accepted = accepted.split("return next;", 1)[0]
+    assert "if v_source_event_id is not null then" in accepted
+    assert "stored_updated_at := nullif(" in accepted
+    rejected = sql.split("disposition := 'rejected';", 1)[1].split("end loop;", 1)[0]
+    assert "stored_updated_at := null;" in rejected
+    drop_at = sql.index("drop function public.persist_canonical_event_batch")
+    notify_at = sql.index("notify pgrst, 'reload schema';")
+    commit_at = sql.rindex("commit;")
+    begin_at = sql.index("begin;")
+    assert begin_at < drop_at < notify_at < commit_at

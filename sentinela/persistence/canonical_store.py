@@ -271,6 +271,7 @@ class SupabaseCanonicalProvenanceStore:
                 if row.get("content_hash") is not None else None
             ),
             revision_id=row.get("revision_id"),
+            stored_updated_at=row.get("stored_updated_at"),
         )
 
 

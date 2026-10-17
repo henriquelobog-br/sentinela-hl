@@ -151,6 +151,35 @@ def test_old_event_rpc_response_without_canonical_event_id_is_compatible():
     })
 
     assert item.canonical_event_id is None
+    assert item.stored_updated_at is None
+
+
+def test_old_event_rpc_response_without_stored_updated_at_is_compatible():
+    item = SupabaseCanonicalProvenanceStore._item({
+        "artifact_id": RUN_ID,
+        "canonical_event_id": CANONICAL_EVENT_ID,
+        "disposition": "observed_existing",
+        "content_hash": "a" * 64,
+        "revision_id": RUN_ID,
+    })
+
+    assert str(item.canonical_event_id) == CANONICAL_EVENT_ID
+    assert item.stored_updated_at is None
+
+
+def test_extra_stored_updated_at_column_is_parsed_when_present():
+    item = SupabaseCanonicalProvenanceStore._item({
+        "artifact_id": RUN_ID,
+        "canonical_event_id": CANONICAL_EVENT_ID,
+        "disposition": "observed_existing",
+        "content_hash": "a" * 64,
+        "revision_id": RUN_ID,
+        "stored_updated_at": "2026-08-13T18:00:00Z",
+        "unexpected": "ignored-by-named-fields",
+    })
+
+    assert item.stored_updated_at.year == 2026
+    assert item.stored_updated_at.hour == 18
 
 
 def test_manifest_can_record_commit_ambiguity_without_retrying():

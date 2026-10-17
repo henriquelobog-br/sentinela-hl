@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 
 import pytest
 
@@ -147,3 +149,76 @@ def test_response_contains_no_runner_output():
         "status": "succeeded",
         "exit_code": 0,
     }
+
+
+def test_bridge_forwards_only_stale_revision_lines(monkeypatch, capsys):
+    completed = subprocess.CompletedProcess(
+        args=("python", "-m", "sentinela.cli.run_operational"),
+        returncode=0,
+        stdout=(
+            "run_id=623634f0-941a-47ec-bd7c-cddc26ce9e43\n"
+            "SENTINELA_STALE_REVISION_SKIPPED source_event_id=us6000stale "
+            "incoming_updated_at=2026-08-13T12:00:00Z "
+            "stored_updated_at=2026-08-13T18:00:00Z\n"
+            "run_status=complete\n"
+        ),
+        stderr="Traceback (most recent call last):\nValueError: noise\n",
+    )
+    monkeypatch.setattr(
+        bridge, "_command_for_tier", lambda tier: ("python", "-c", "pass")
+    )
+    monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: completed)
+
+    response = bridge._run_tier("urgent")
+    out = capsys.readouterr().out
+    assert out.count("SENTINELA_STALE_REVISION_SKIPPED") == 1
+    assert "source_event_id=us6000stale" in out
+    assert "run_id=" not in out
+    assert "Traceback" not in out
+    assert "ValueError" not in out
+    assert response["exit_code"] == 0
+    assert response["status"] == "succeeded"
+
+
+def test_timeout_forwards_stale_line_from_real_child(monkeypatch, capsys):
+    monkeypatch.setattr(bridge, "BRIDGE_WATCHDOG_SECONDS", 0.4)
+    script = (
+        "import sys, time\n"
+        "print("
+        "'SENTINELA_STALE_REVISION_SKIPPED source_event_id=us1 "
+        "incoming_updated_at=2026-08-13T12:00:00Z "
+        "stored_updated_at=2026-08-13T18:00:00Z', flush=True)\n"
+        "print('noise-out', flush=True)\n"
+        "print('noise-err', file=sys.stderr, flush=True)\n"
+        "time.sleep(5)\n"
+    )
+    monkeypatch.setattr(
+        bridge,
+        "_command_for_tier",
+        lambda tier: (sys.executable, "-c", script),
+    )
+    response = bridge._run_tier("urgent")
+    out = capsys.readouterr().out
+    assert response["status"] == "watchdog_timeout_manual_reconciliation_required"
+    assert response["exit_code"] == 1
+    assert out.count("SENTINELA_STALE_REVISION_SKIPPED") == 1
+    assert "source_event_id=us1" in out
+    assert "noise-out" not in out
+    assert "noise-err" not in out
+
+
+def test_timeout_bytes_capture_does_not_become_bridge_error():
+    exc = subprocess.TimeoutExpired(
+        cmd=("python", "-c", "pass"),
+        timeout=0.1,
+        output=(
+            b"SENTINELA_STALE_REVISION_SKIPPED source_event_id=us1 "
+            b"incoming_updated_at=2026-08-13T12:00:00Z "
+            b"stored_updated_at=2026-08-13T18:00:00Z\nnoise-out\n"
+        ),
+        stderr=b"noise-err\n",
+    )
+    lines = bridge._stale_revision_log_lines(exc.stdout)
+    assert len(lines) == 1
+    assert lines[0].startswith("SENTINELA_STALE_REVISION_SKIPPED ")
+    assert bridge._stale_revision_log_lines(exc.stderr) == ()

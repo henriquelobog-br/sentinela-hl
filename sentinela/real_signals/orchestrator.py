@@ -228,6 +228,94 @@ def _stable_group_signal(signal: ResearcherSignal, event_by_id: dict[str, Any]) 
     return signal.model_copy(update=update)
 
 
+def _iso_z(value: datetime) -> str:
+    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _parse_evidence_updated_at(event: Any) -> datetime | None:
+    if not event.evidence:
+        return None
+    first = event.evidence[0]
+    if not isinstance(first, dict):
+        return None
+    raw = first.get("updated_at")
+    if raw is None:
+        return None
+    if isinstance(raw, datetime):
+        if raw.tzinfo is None or raw.utcoffset() is None:
+            return None
+        return raw.astimezone(timezone.utc)
+    if not isinstance(raw, str):
+        return None
+    text = raw.strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        return None
+    return parsed.astimezone(timezone.utc)
+
+
+def _source_event_id(event: Any) -> str | None:
+    if not event.evidence:
+        return None
+    first = event.evidence[0]
+    if not isinstance(first, dict):
+        return None
+    value = first.get("source_event_id")
+    if not isinstance(value, str):
+        return None
+    stripped = value.strip()
+    return stripped or None
+
+
+def _is_usgs_seismic_event(event: Any) -> bool:
+    return (
+        event.source == "USGS"
+        and event.scientific_area == "seismology"
+        and event.category == "earthquake_detected"
+    )
+
+
+def _exclude_stale_usgs_seismic_events(
+    events: tuple[Any, ...],
+    persistence: CanonicalEventPersistenceResult,
+) -> tuple[Any, ...]:
+    items = {item.artifact_id: item for item in persistence.items}
+    kept: list[Any] = []
+    for event in events:
+        item = items.get(str(event.id))
+        stored = None if item is None else item.stored_updated_at
+        incoming = _parse_evidence_updated_at(event)
+        if (
+            item is None
+            or stored is None
+            or incoming is None
+            or not _is_usgs_seismic_event(event)
+        ):
+            kept.append(event)
+            continue
+        if stored.tzinfo is None or stored.utcoffset() is None:
+            kept.append(event)
+            continue
+        stored_utc = stored.astimezone(timezone.utc)
+        if incoming < stored_utc:
+            source_event_id = _source_event_id(event) or str(event.id)
+            print(
+                "SENTINELA_STALE_REVISION_SKIPPED "
+                f"source_event_id={source_event_id} "
+                f"incoming_updated_at={_iso_z(incoming)} "
+                f"stored_updated_at={_iso_z(stored_utc)}",
+                flush=True,
+            )
+            continue
+        kept.append(event)
+    return tuple(kept)
+
+
 def _remap_canonical_event_ids(
     events: tuple[Any, ...],
     persistence: CanonicalEventPersistenceResult,
@@ -695,6 +783,9 @@ def _execute_real_signals(
         progress.stage = "canonical_event_persistence"
         canonical_event_persistence = canonical_store.persist_events(
             run_id, canonical_acceptance
+        )
+        events = _exclude_stale_usgs_seismic_events(
+            events, canonical_event_persistence
         )
         events = _remap_canonical_event_ids(
             events, canonical_event_persistence

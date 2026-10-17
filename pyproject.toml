@@ -27,6 +27,9 @@ dev = [
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+markers = [
+    "local_db: requires disposable local supabase via SENTINELA_LOCAL_DB_PHASE",
+]
 
 [tool.uv]
 package = false

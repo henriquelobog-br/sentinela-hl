@@ -15,6 +15,7 @@ from sentinela.seismic_editorial.operational import (
     build_records,
     select_hourly_usgs_events,
 )
+from sentinela.seismic_editorial.persistence import seismic_input_facts_signature
 
 
 class _Response:
@@ -66,6 +67,45 @@ def _run(event, persistence):
 def test_hourly_selection_requires_canonical_persistence(sarangani_event):
     with pytest.raises(SeismicEditorialOperationalError):
         select_hourly_usgs_events(_run(sarangani_event, None))
+
+
+def test_hourly_selection_uses_canonical_event_id_after_remap(sarangani_event):
+    candidate_id = "11111111-1111-4111-8111-111111111111"
+    remapped = sarangani_event.model_copy()
+    persistence = CanonicalEventPersistenceResult(
+        received=1,
+        accepted=1,
+        rejected=0,
+        items=(
+            CanonicalPersistenceItemResult(
+                artifact_id=candidate_id,
+                canonical_event_id=sarangani_event.id,
+                disposition=PersistenceDisposition.UPDATED,
+                content_hash="a" * 64,
+            ),
+        ),
+    )
+    selected = select_hourly_usgs_events(_run(remapped, persistence))
+    assert selected == (remapped,)
+    records = build_records(selected, generated_at=datetime(2026, 10, 13, 12, tzinfo=timezone.utc))
+    assert records[0].event_id == remapped.id
+    assert records[0].input_facts_signature == seismic_input_facts_signature(remapped)
+
+
+def test_hourly_selection_rejects_unpersisted_remapped_event(sarangani_event):
+    persistence = CanonicalEventPersistenceResult(
+        received=1,
+        accepted=0,
+        rejected=1,
+        items=(
+            CanonicalPersistenceItemResult(
+                artifact_id="11111111-1111-4111-8111-111111111111",
+                disposition=PersistenceDisposition.REJECTED,
+            ),
+        ),
+    )
+    with pytest.raises(SeismicEditorialOperationalError):
+        select_hourly_usgs_events(_run(sarangani_event, persistence))
 
 
 def test_hourly_selection_accepts_persisted_usgs_event(sarangani_event):

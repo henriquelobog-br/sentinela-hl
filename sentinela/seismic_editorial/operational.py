@@ -70,7 +70,9 @@ def select_hourly_usgs_events(run: RealSignalRun) -> tuple[Event, ...]:
         )
 
     persisted_ids = {
-        item.artifact_id
+        str(item.canonical_event_id)
+        if item.canonical_event_id is not None
+        else item.artifact_id
         for item in persistence.items
         if item.disposition.value != "rejected"
     }

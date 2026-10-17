@@ -31,6 +31,7 @@ LOCK_FILE: Final = Path(
     "/tmp/sentinela-hl-o4c-operational.lock"
 )
 DISABLED_SOURCES_FILE: Final = Path("/run/sentinela/disabled-sources")
+STALE_REVISION_LOG_PREFIX: Final = "SENTINELA_STALE_REVISION_SKIPPED"
 
 JOB_TIMEOUT_SECONDS: Final = 900
 BRIDGE_WATCHDOG_SECONDS: Final = 1020
@@ -214,6 +215,40 @@ def _prepare_runtime() -> None:
         SOCKET_PATH.unlink()
 
 
+def _normalize_captured_output(stream: str | bytes | None) -> str:
+    if stream is None:
+        return ""
+    if isinstance(stream, bytes):
+        return stream.decode("utf-8", errors="replace")
+    return stream
+
+
+def _stale_revision_log_lines(stream: str | bytes | None) -> tuple[str, ...]:
+    text = _normalize_captured_output(stream)
+    if not text:
+        return ()
+    prefix = STALE_REVISION_LOG_PREFIX
+    return tuple(
+        line
+        for line in text.splitlines()
+        if line == prefix or line.startswith(prefix + " ")
+    )
+
+
+def _forward_stale_revision_logs(
+    completed: subprocess.CompletedProcess[str] | subprocess.TimeoutExpired,
+    *,
+    best_effort: bool = False,
+) -> None:
+    try:
+        for stream in (completed.stdout, completed.stderr):
+            for line in _stale_revision_log_lines(stream):
+                print(line, flush=True)
+    except Exception:
+        if not best_effort:
+            raise
+
+
 def _run_tier(tier: str) -> dict[str, object]:
     if not _BUSY.acquire(blocking=False):
         return _response(
@@ -233,13 +268,15 @@ def _run_tier(tier: str) -> dict[str, object]:
                 timeout=BRIDGE_WATCHDOG_SECONDS,
                 check=False,
             )
-        except subprocess.TimeoutExpired:
+        except subprocess.TimeoutExpired as exc:
+            _forward_stale_revision_logs(exc, best_effort=True)
             return _response(
                 tier=tier,
                 status="watchdog_timeout_manual_reconciliation_required",
                 exit_code=1,
             )
 
+        _forward_stale_revision_logs(completed)
         code = int(completed.returncode)
 
         if code == 0:
